@@ -1,3 +1,16 @@
 {
     "debug.onTaskErrors": "debugAnyway",
+    "files.associations": {
+        "idt.h": "c",
+        "stdint.h": "c",
+        "stddef.h": "c",
+        "interrupt.h": "c"
+    },
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "/mnt/d/Kuliah/os-2024-ususbuntu/bin",
+            "binaryPath": "/mnt/d/Kuliah/os-2024-ususbuntu/bin/kernel",
+            "binaryArgs": []
+        }
+    ],
 }
