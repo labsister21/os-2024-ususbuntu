@@ -1,5 +1,12 @@
 {
     "debug.onTaskErrors": "debugAnyway",
+    "files.associations": {
+        "*.pl": "prolog",
+        "*.html": "html",
+        "*.sage": "python",
+        "disk.h": "c",
+        "portio.h": "c"
+    },
     // "files.associations": {
     //     "idt.h": "c",
     //     "stdint.h": "c",
