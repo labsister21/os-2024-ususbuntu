@@ -6,8 +6,7 @@
 static struct KeyboardDriverState keyboard_state = {
     .read_extended_mode = false,
     .keyboard_input_on = false,
-    .keyboard_buffer = {0},
-    .buffer_index = 0,
+    .keyboard_buffer = '\0',
 };
 
 const char keyboard_scancode_1_to_ascii_map[256] = {
@@ -46,7 +45,8 @@ void keyboard_state_deactivate(void)
 // Get keyboard buffer value and flush the buffer - @param buf Pointer to char buffer
 void get_keyboard_buffer(char* buf)
 {
-  memcpy(buf, keyboard_state.keyboard_buffer, KEYBOARD_MAX_BUFFER);
+  *buf = keyboard_state.keyboard_buffer;
+  keyboard_state.keyboard_buffer = '\0';
 }
 
 /* -- Keyboard Interrupt Service Routine -- */
@@ -59,12 +59,11 @@ void keyboard_isr(void)
 {
   uint8_t scancode = in(KEYBOARD_DATA_PORT);
   if (!keyboard_state.keyboard_input_on)
-    keyboard_state.buffer_index = 0;
+    keyboard_state.keyboard_buffer = '\0';
   else
   {
     char ascii_char = keyboard_scancode_1_to_ascii_map[scancode];
-    keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = ascii_char;
-    keyboard_state.buffer_index++;
+    keyboard_state.keyboard_buffer = ascii_char;
   }
   pic_ack(IRQ_KEYBOARD);
 }

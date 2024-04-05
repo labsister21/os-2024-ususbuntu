@@ -5,8 +5,6 @@ struct InterruptDescriptorTable interrupt_descriptor_table = {
     .table = {},
 };
 
-void* isr_stub_table[ISR_STUB_TABLE_LIMIT];
-
 struct IDTR _idt_idtr = {
     .size = sizeof(interrupt_descriptor_table) - 1,
     .address = &interrupt_descriptor_table,

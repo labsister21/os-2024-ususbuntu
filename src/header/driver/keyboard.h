@@ -6,14 +6,13 @@
 #include <stddef.h>
 #include "header/cpu/interrupt.h"
 
-#define EXT_SCANCODE_UP 0x48
-#define EXT_SCANCODE_DOWN 0x50
-#define EXT_SCANCODE_LEFT 0x4B
-#define EXT_SCANCODE_RIGHT 0x4D
+#define EXT_SCANCODE_UP        0x48
+#define EXT_SCANCODE_DOWN      0x50
+#define EXT_SCANCODE_LEFT      0x4B
+#define EXT_SCANCODE_RIGHT     0x4D
 
-#define KEYBOARD_DATA_PORT 0x60
+#define KEYBOARD_DATA_PORT     0x60
 #define EXTENDED_SCANCODE_BYTE 0xE0
-#define KEYBOARD_MAX_BUFFER 256
 
 /**
  * keyboard_scancode_1_to_ascii_map[256], Convert scancode values that correspond to ASCII printables
@@ -30,13 +29,15 @@ extern const char keyboard_scancode_1_to_ascii_map[256];
  * @param keyboard_input_on  Indicate whether keyboard ISR is activated or not
  * @param keyboard_buffer    Storing keyboard input values in ASCII
  */
-struct KeyboardDriverState
-{
+struct KeyboardDriverState {
   bool read_extended_mode;
   bool keyboard_input_on;
-  char keyboard_buffer[KEYBOARD_MAX_BUFFER];
-  uint8_t buffer_index;
+  char keyboard_buffer;
 } __attribute((packed));
+
+
+
+
 
 /* -- Driver Interfaces -- */
 
@@ -47,7 +48,7 @@ void keyboard_state_activate(void);
 void keyboard_state_deactivate(void);
 
 // Get keyboard buffer value and flush the buffer - @param buf Pointer to char buffer
-void get_keyboard_buffer(char *buf);
+void get_keyboard_buffer(char* buf);
 
 /* -- Keyboard Interrupt Service Routine -- */
 

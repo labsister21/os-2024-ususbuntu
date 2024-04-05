@@ -5,7 +5,10 @@
         "*.html": "html",
         "*.sage": "python",
         "disk.h": "c",
-        "portio.h": "c"
+        "portio.h": "c",
+        "fat32.h": "c",
+        "string.h": "c",
+        "idt.h": "c"
     },
     // "files.associations": {
     //     "idt.h": "c",
