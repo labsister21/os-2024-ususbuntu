@@ -83,7 +83,7 @@ struct PageDirectoryEntry {
  */
 struct PageDirectory {
     // TODO : Implement
-    struct PageDirectoryEntry table[PAGE_ENTRY_COUNT]
+    struct PageDirectoryEntry table[PAGE_ENTRY_COUNT];
 } __attribute__((packed));
 
 /**
