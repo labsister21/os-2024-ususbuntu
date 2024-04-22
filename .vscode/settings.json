@@ -12,7 +12,8 @@
         "stdio.h": "c",
         "stdint.h": "c",
         "stdlib.h": "c",
-        "interrupt.h": "c"
+        "interrupt.h": "c",
+        "__fpos_t.h": "c"
     },
     // "files.associations": {
     //     "idt.h": "c",
