@@ -8,7 +8,10 @@
         "portio.h": "c",
         "fat32.h": "c",
         "string.h": "c",
-        "idt.h": "c"
+        "idt.h": "c",
+        "interrupt.h": "c",
+        "stdbool.h": "c",
+        "framebuffer.h": "c"
     },
     // "files.associations": {
     //     "idt.h": "c",

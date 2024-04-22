@@ -10,15 +10,18 @@
 #include "header/driver/disk.h"
 #include "header/filesystem/fat32.h"
 
-void kernel_setup(void) {
+void kernel_setup(void)
+{
   load_gdt(&_gdt_gdtr);
   pic_remap();
   activate_keyboard_interrupt();
   initialize_idt();
   framebuffer_clear();
   framebuffer_set_cursor(0, 0);
+  keyboard_state_activate();
+
   initialize_filesystem_fat32();
 
-  while (true);
+  while (true)
+    ;
 }
-
