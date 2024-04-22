@@ -5,6 +5,11 @@
 #include "header/stdlib/string.h"
 #include "header/cpu/portio.h"
 
+struct FramebufferState framebuffer_state = {
+    .cur_col = 0,
+    .cur_row = 0
+};
+
 void framebuffer_set_cursor(uint8_t r, uint8_t c) {
     // TODO : Implement
 

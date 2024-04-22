@@ -18,6 +18,7 @@ void kernel_setup(void)
   initialize_idt();
   framebuffer_clear();
   framebuffer_set_cursor(0, 0);
+  keyboard_state_activate();
   initialize_filesystem_fat32();
 
   gdt_install_tss();
