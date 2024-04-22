@@ -25,7 +25,7 @@ extern struct PageDirectory _paging_kernel_page_directory;
  * 
  * @param present_bit       Indicate whether this entry is exist or not
  * @param write_bit         If 0, writes may not be allowed to the 4-MByte page referenced by this entry
- * @param user_bit          If 0, user-mode accesses are not allowed to the 4-MByte page referenced by this entry
+ * @param user_bit            If 0, user-mode accesses are not allowed to the 4-MByte page referenced by this entry
  * @param pwt_bit           Indirectly determines the memory type used to access the 4-MByte page referenced by this entry
  * @param pcd_bit           Indirectly determines the memory type used to access the 4-MByte page referenced by this entry
  * @param accessed_bit      Indicate whether software has accessed the 4-MByte page referenced by this entry
@@ -89,9 +89,8 @@ struct PageDirectory {
 /**
  * Containing page manager states.
  * 
- * @param page_frame_map        Keeping track empty space. True when the page frame is currently used
- * @param free_page_frame_count Page frame that are free (empty)
- * 
+ * @param page_frame_map Keeping track empty space. True when the page frame is currently used
+ * ...
  */
 struct PageManagerState {
     bool     page_frame_map[PAGE_FRAME_MAX_COUNT];
