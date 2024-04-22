@@ -8,7 +8,11 @@
         "portio.h": "c",
         "fat32.h": "c",
         "string.h": "c",
-        "idt.h": "c"
+        "idt.h": "c",
+        "stdio.h": "c",
+        "stdint.h": "c",
+        "stdlib.h": "c",
+        "interrupt.h": "c"
     },
     // "files.associations": {
     //     "idt.h": "c",
