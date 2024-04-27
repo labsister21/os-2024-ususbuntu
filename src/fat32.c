@@ -300,6 +300,7 @@ int8_t write(struct FAT32DriverRequest request) {
         }
     }
 
+    // Benerin jadi yang kosong pertama kali
     driver_state.dir_table_buf.table[directory_size] = new_entry;
     write_clusters(&driver_state.dir_table_buf, request.parent_cluster_number, 1);
     write_clusters(&driver_state.fat_table, FAT_CLUSTER_NUMBER, 1);

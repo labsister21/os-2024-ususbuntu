@@ -37,3 +37,26 @@ void framebuffer_clear(void) {
         }
     }
 }
+
+void putchar(char c, uint32_t color) {
+    if (c != '\n') {
+        framebuffer_write(framebuffer_state.cur_row, framebuffer_state.cur_col, c, color, 0x00);
+    }
+
+    if (framebuffer_state.cur_col == 79 || c == '\n') {
+        framebuffer_state.cur_col = 0;
+        framebuffer_state.cur_row++;
+    }
+    else {
+        framebuffer_state.cur_col++;
+    }
+}
+
+void puts(char* str, uint32_t len, uint32_t color) {
+    for (uint32_t i = 0; i < len; i++) {
+        if (str[i] == '\0') break;
+
+        putchar(str[i], color);
+    }
+    framebuffer_set_cursor(framebuffer_state.cur_row, framebuffer_state.cur_col);
+}

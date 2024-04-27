@@ -1,33 +1,34 @@
 {
-    "debug.onTaskErrors": "debugAnyway",
-    "files.associations": {
-        "*.pl": "prolog",
-        "*.html": "html",
-        "*.sage": "python",
-        "disk.h": "c",
-        "portio.h": "c",
-        "fat32.h": "c",
-        "string.h": "c",
-        "idt.h": "c",
-        "stdio.h": "c",
-        "stdint.h": "c",
-        "stdlib.h": "c",
-        "interrupt.h": "c",
-        "__fpos_t.h": "c",
-        "framebuffer.h": "c",
-        "stdbool.h": "c"
-    },
-    // "files.associations": {
-    //     "idt.h": "c",
-    //     "stdint.h": "c",
-    //     "stddef.h": "c",
-    //     "interrupt.h": "c"
-    // },
-    // "makefile.launchConfigurations": [
-    //     {
-    //         "cwd": "/mnt/d/Kuliah/os-2024-ususbuntu/bin",
-    //         "binaryPath": "/mnt/d/Kuliah/os-2024-ususbuntu/bin/kernel",
-    //         "binaryArgs": []
-    //     }
-    // ],
+  "debug.onTaskErrors": "debugAnyway",
+  "files.associations": {
+    "*.pl": "prolog",
+    "*.html": "html",
+    "*.sage": "python",
+    "disk.h": "c",
+    "portio.h": "c",
+    "fat32.h": "c",
+    "string.h": "c",
+    "idt.h": "c",
+    "stdio.h": "c",
+    "stdint.h": "c",
+    "stdlib.h": "c",
+    "interrupt.h": "c",
+    "__fpos_t.h": "c",
+    "framebuffer.h": "c",
+    "stdbool.h": "c",
+    "keyboard.h": "c"
+  }
+  // "files.associations": {
+  //     "idt.h": "c",
+  //     "stdint.h": "c",
+  //     "stddef.h": "c",
+  //     "interrupt.h": "c"
+  // },
+  // "makefile.launchConfigurations": [
+  //     {
+  //         "cwd": "/mnt/d/Kuliah/os-2024-ususbuntu/bin",
+  //         "binaryPath": "/mnt/d/Kuliah/os-2024-ususbuntu/bin/kernel",
+  //         "binaryArgs": []
+  //     }
+  // ],
 }
