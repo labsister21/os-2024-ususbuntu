@@ -300,8 +300,14 @@ int8_t write(struct FAT32DriverRequest request) {
         }
     }
 
-    // Benerin jadi yang kosong pertama kali
-    driver_state.dir_table_buf.table[directory_size] = new_entry;
+    uint32_t new_entry_idx = 0;
+    for (uint32_t i = 1; i < directory_size; i++) {
+        if (driver_state.dir_table_buf.table[i].user_attribute != UATTR_NOT_EMPTY) {
+            new_entry_idx = i;
+            break;
+        }
+    }
+    driver_state.dir_table_buf.table[new_entry_idx] = new_entry;
     write_clusters(&driver_state.dir_table_buf, request.parent_cluster_number, 1);
     write_clusters(&driver_state.fat_table, FAT_CLUSTER_NUMBER, 1);
 

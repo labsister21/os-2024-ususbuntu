@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "header/driver/framebuffer.h"
+#include "header/driver/keyboard.h"
 #include "header/stdlib/string.h"
 #include "header/cpu/portio.h"
 
@@ -46,6 +47,8 @@ void putchar(char c, uint32_t color) {
     if (framebuffer_state.cur_col == 79 || c == '\n') {
         framebuffer_state.cur_col = 0;
         framebuffer_state.cur_row++;
+
+        if (framebuffer_state.cur_col == MAX_ROW) scroll_up();
     }
     else {
         framebuffer_state.cur_col++;

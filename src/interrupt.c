@@ -4,6 +4,7 @@
 #include "header/cpu/gdt.h"
 #include "header/filesystem/fat32.h"
 #include "header/driver/framebuffer.h"
+#include "header/stdlib/string.h"
 
 // I/O port wait, around 1-4 microsecond, for I/O synchronization purpose
 void io_wait(void)
@@ -53,8 +54,32 @@ void syscall(struct InterruptFrame frame) {
       *(struct FAT32DriverRequest*)frame.cpu.general.ebx
     );
     break;
+  case 1:
+    *((int8_t*)frame.cpu.general.ecx) = read_directory(
+      *(struct FAT32DriverRequest*)frame.cpu.general.ebx
+    );
+    break;
+  case 2:
+    *((int8_t*)frame.cpu.general.ecx) = write(
+      *(struct FAT32DriverRequest*)frame.cpu.general.ebx
+    );
+    break;
+  case 3:
+    *((int8_t*)frame.cpu.general.ecx) = delete(
+      *(struct FAT32DriverRequest*)frame.cpu.general.ebx
+      );
+    break;
   case 4:
-    get_keyboard_buffer((char*)frame.cpu.general.ebx);
+    keyboard_state_activate();
+    __asm__("sti");
+    while (is_keyboard_blocking());
+
+    char buffer[KEYBOARD_BUFFER_SIZE];
+    get_keyboard_buffer(buffer);
+    memcpy((char*)frame.cpu.general.ebx, buffer, KEYBOARD_BUFFER_SIZE);
+    break;
+  case 5:
+    putchar((char)frame.cpu.general.ebx, frame.cpu.general.ecx);
     break;
   case 6:
     puts(

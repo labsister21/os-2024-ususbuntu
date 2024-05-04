@@ -73,19 +73,7 @@ bool paging_allocate_user_page_frame(struct PageDirectory* page_dir, void* virtu
         return false;
     }
 
-    // uint32_t free_physical_frame;
-    // if always make contigous
-    // free_physical_frame = PAGE_FRAME_MAX_COUNT - page_manager_state.free_page_frame_count;
-    // if find free physical frame using first-fit
-    // for (uint32_t i = 0; i < PAGE_FRAME_MAX_COUNT; i++){
-    //     if (!page_manager_state.page_frame_map[i]){
-    //         free_physical_frame = i;
-    //         break;
-    //     }
-    // }
 
-    // uint32_t physical_addr = (uint32_t)free_physical_frame * PAGE_FRAME_SIZE;
-    // if (physical_addr < 128 * 1024 * 1024) {
     struct PageDirectoryEntryFlag userFlag = {
         .present_bit = 1,
         .write_bit = 1,
@@ -93,14 +81,10 @@ bool paging_allocate_user_page_frame(struct PageDirectory* page_dir, void* virtu
         .use_pagesize_4_mb = 1,
     };
     update_page_directory_entry(page_dir, (uint32_t*)physical_addr, virtual_addr, userFlag);
-    // page_manager_state.page_frame_map[free_physical_frame] = true;
     page_manager_state.page_frame_map[PAGE_FRAME_MAX_COUNT - page_manager_state.free_page_frame_count] = true;
     page_manager_state.free_page_frame_count--;
 
     return true;
-    // }
-
-    // return false;
 }
 
 bool paging_free_user_page_frame(struct PageDirectory* page_dir, void* virtual_addr) {
@@ -119,22 +103,10 @@ bool paging_free_user_page_frame(struct PageDirectory* page_dir, void* virtual_a
     };
     page_dir->table[page_index].flag = emptyFlag;
     page_dir->table[page_index].lower_address = 0;
-    // deallocate the physical (?)
-    // flush_single_tlb(virtual_addr);
 
-    // if always contigous
-    // uint32_t last_pageframe_used = PAGE_FRAME_MAX_COUNT - page_manager_state.free_page_frame_count - 1;
     uint32_t last_pageframe_used = PAGE_FRAME_MAX_COUNT - page_manager_state.free_page_frame_count;
     page_manager_state.page_frame_map[last_pageframe_used] = false;
     page_manager_state.free_page_frame_count++;
-    // if allocate using first-fit
-    // for (uint32_t i = 0; i < PAGE_FRAME_MAX_COUNT; i++){
-    //     if (page_manager_state.page_frame_map[i]){
-    //         page_manager_state.page_frame_map[i] = false;
-    //         page_manager_state.free_page_frame_count--;
-    //         break;
-    //     }
-    // }
 
     return true;
 }

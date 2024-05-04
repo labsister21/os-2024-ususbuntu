@@ -16,7 +16,8 @@
     "__fpos_t.h": "c",
     "framebuffer.h": "c",
     "stdbool.h": "c",
-    "keyboard.h": "c"
+    "keyboard.h": "c",
+    "command.h": "c"
   }
   // "files.associations": {
   //     "idt.h": "c",

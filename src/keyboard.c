@@ -64,11 +64,9 @@ void keyboard_state_deactivate(void)
 }
 
 // Get keyboard buffer values - @param buf Pointer to char buffer, recommended size at least KEYBOARD_BUFFER_SIZE
-void get_keyboard_buffer(char *buf)
+void get_keyboard_buffer(char* buf)
 {
-    char newChar = keyboard_state.keyboard_buffer[0];
-    *buf = newChar;
-    keyboard_state.keyboard_buffer[0] = '\0';
+    memcpy(buf, keyboard_state.keyboard_buffer, KEYBOARD_BUFFER_SIZE);
 }
 
 // Scroll framebuffer up by 1 row, will clear the last row to empty
@@ -110,11 +108,11 @@ void keyboard_isr(void)
         // Handle extended scancode
         switch (scancode)
         {
-        // Capslock key
+            // Capslock key
         case 0x3a:
             keyboard_state.capslock_on ^= true;
             break;
-        // Shift key released
+            // Shift key released
         case 0x2a:
             keyboard_state.shift_on = true;
             break;
@@ -217,14 +215,12 @@ void keyboard_isr(void)
         // Newline Enter
         else if (ascii_char == '\n')
         {
-            memset(keyboard_state.keyboard_buffer, '\0', sizeof(keyboard_state.keyboard_buffer));
-            keyboard_state.buffer_index = 0;
-            // Todo: Turn on this comment on shell mode
-            // keyboard_state.keyboard_input_on = 0;
+            keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = '\n';
+            keyboard_state_deactivate();
             framebuffer_state.cur_row++;
             framebuffer_state.cur_col = 0;
             // Scroll up if the screen is full
-            if(framebuffer_state.cur_row == MAX_ROW) scroll_up();
+            if (framebuffer_state.cur_row == MAX_ROW) scroll_up();
         }
         else
         {
@@ -251,9 +247,13 @@ void keyboard_isr(void)
             framebuffer_write(framebuffer_state.cur_row, framebuffer_state.cur_col, ascii_char, 0xFF, 0);
             framebuffer_state.cur_col++;
             // Scroll up if the screen is full
-            if(framebuffer_state.cur_row == MAX_ROW) scroll_up();
+            if (framebuffer_state.cur_row == MAX_ROW) scroll_up();
         }
         framebuffer_set_cursor(framebuffer_state.cur_row, framebuffer_state.cur_col);
     }
     pic_ack(IRQ_KEYBOARD);
+}
+
+bool is_keyboard_blocking(void) {
+    return keyboard_state.keyboard_input_on;
 }
