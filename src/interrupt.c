@@ -47,53 +47,56 @@ void pic_remap(void)
   out(PIC2_DATA, PIC_DISABLE_ALL_MASK);
 }
 
-void syscall(struct InterruptFrame frame) {
-  switch (frame.cpu.general.eax) {
+void syscall(struct InterruptFrame frame)
+{
+  switch (frame.cpu.general.eax)
+  {
   case 0:
-    *((int8_t*)frame.cpu.general.ecx) = read(
-      *(struct FAT32DriverRequest*)frame.cpu.general.ebx
-    );
+    *((int8_t *)frame.cpu.general.ecx) = read(
+        *(struct FAT32DriverRequest *)frame.cpu.general.ebx);
     break;
   case 1:
-    *((int8_t*)frame.cpu.general.ecx) = read_directory(
-      *(struct FAT32DriverRequest*)frame.cpu.general.ebx
-    );
+    *((int8_t *)frame.cpu.general.ecx) = read_directory(
+        *(struct FAT32DriverRequest *)frame.cpu.general.ebx);
     break;
   case 2:
-    *((int8_t*)frame.cpu.general.ecx) = write(
-      *(struct FAT32DriverRequest*)frame.cpu.general.ebx
-    );
+    *((int8_t *)frame.cpu.general.ecx) = write(
+        *(struct FAT32DriverRequest *)frame.cpu.general.ebx);
     break;
   case 3:
-    *((int8_t*)frame.cpu.general.ecx) = delete(
-      *(struct FAT32DriverRequest*)frame.cpu.general.ebx
-      );
+    *((int8_t *)frame.cpu.general.ecx) = delete (
+        *(struct FAT32DriverRequest *)frame.cpu.general.ebx);
     break;
   case 4:
     keyboard_state_activate();
     __asm__("sti");
-    while (is_keyboard_blocking());
+    while (is_keyboard_blocking())
+      ;
 
     char buffer[KEYBOARD_BUFFER_SIZE];
     get_keyboard_buffer(buffer);
-    memcpy((char*)frame.cpu.general.ebx, buffer, KEYBOARD_BUFFER_SIZE);
+    memcpy((char *)frame.cpu.general.ebx, buffer, KEYBOARD_BUFFER_SIZE);
     break;
   case 5:
     putchar((char)frame.cpu.general.ebx, frame.cpu.general.ecx);
     break;
   case 6:
     puts(
-      (char*)frame.cpu.general.ebx,
-      frame.cpu.general.ecx,
-      frame.cpu.general.edx
-    ); // Assuming puts() exist in kernel
+        (char *)frame.cpu.general.ebx,
+        frame.cpu.general.ecx,
+        frame.cpu.general.edx); // Assuming puts() exist in kernel
     break;
   case 7:
     keyboard_state_activate();
     break;
+  case (8):
+    *((uint32_t *)frame.cpu.general.ecx) = move_to_child_directory(*(struct FAT32DriverRequest *)frame.cpu.general.ebx);
+    break;
+  case (9):
+    *((uint32_t *)frame.cpu.general.ecx) = move_to_parent_directory(*(struct FAT32DriverRequest *)frame.cpu.general.ebx);
+    break;
   }
 }
-
 
 void main_interrupt_handler(struct InterruptFrame frame)
 {
@@ -120,10 +123,11 @@ struct TSSEntry _interrupt_tss_entry = {
     .ss0 = GDT_KERNEL_DATA_SEGMENT_SELECTOR,
 };
 
-void set_tss_kernel_current_stack(void) {
+void set_tss_kernel_current_stack(void)
+{
   uint32_t stack_ptr;
   // Reading base stack frame instead esp
-  __asm__ volatile ("mov %%ebp, %0": "=r"(stack_ptr) : /* <Empty> */);
+  __asm__ volatile("mov %%ebp, %0" : "=r"(stack_ptr) : /* <Empty> */);
   // Add 8 because 4 for ret address and other 4 is for stack_ptr variable
   _interrupt_tss_entry.esp0 = stack_ptr + 8;
 }
