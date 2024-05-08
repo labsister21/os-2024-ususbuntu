@@ -11,11 +11,16 @@ struct FAT32DriverRequest request = {
     .parent_cluster_number = ROOT_CLUSTER_NUMBER,
     .buffer_size = CLUSTER_SIZE,
 };
-int32_t retcode;
 
+int32_t retcode;
+// current directory text to show up in the cli
 char current_dir[255] = "/";
+// buffer to store user input
 char buf[256];
-uint32_t cur_depth = 1;
+// current directory length to keep track of the current directory length
+uint8_t currentdirlen = 1;
+// current working directory cluster number
+uint32_t cwd_cluster_number = ROOT_CLUSTER_NUMBER;
 
 void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx)
 {
@@ -58,7 +63,15 @@ void activate_keyboard(void)
     syscall(7, 0, 0, 0);
 }
 
+void move_child_dir(struct FAT32DriverRequest request, int32_t *retcode)
+{
+    syscall(8, (uint32_t)&request, (uint32_t)retcode, 0);
+}
 
+void move_parent_dir(struct FAT32DriverRequest request, int32_t *retcode)
+{
+    syscall(9, (uint32_t)&request, (uint32_t)retcode, 0);
+}
 
 void command(char *buf, char *current_dir)
 {
@@ -80,9 +93,6 @@ void remove_newline(char *str)
         }
     }
 }
-uint8_t currentdirlen = 1;
-
-uint32_t cwd_cluster_number = ROOT_CLUSTER_NUMBER;
 
 int main(void)
 {
@@ -101,7 +111,7 @@ int main(void)
                 request.parent_cluster_number = cwd_cluster_number;
                 if (cwd_cluster_number != ROOT_CLUSTER_NUMBER)
                 {
-                    syscall(9, (uint32_t)&request, (uint32_t)&retcode, 0);
+                    move_parent_dir(request, &retcode);
                     cwd_cluster_number = retcode;
                     currentdirlen -= 2;
                     while (current_dir[currentdirlen] != '/')
@@ -126,10 +136,10 @@ int main(void)
                 }
                 memcpy(request.ext, "dir", 3);
                 request.parent_cluster_number = cwd_cluster_number;
-                syscall(1, (uint32_t)&request, (uint32_t)&retcode, 0);
+                read_dir_syscall(request, &retcode);
                 if (retcode == 0)
                 {
-                    syscall(8, (uint32_t)&request, (uint32_t)&retcode, 0);
+                    move_child_dir(request, &retcode);
                     cwd_cluster_number = retcode;
                     int32_t idx = 0;
                     while (idx < strlen(request.name))
