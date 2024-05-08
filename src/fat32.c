@@ -45,6 +45,28 @@ void init_directory_table(struct FAT32DirectoryTable* dir_table, char* name, uin
     memcpy(dir_table->table[0].name, name, 8);
 }
 
+
+uint32_t move_to_child_directory(struct FAT32DriverRequest request) {
+    struct FAT32DirectoryTable directory;
+    read_clusters(&directory, request.parent_cluster_number, 1);
+    int dir_length = sizeof(struct FAT32DirectoryTable)/sizeof(struct FAT32DirectoryEntry);
+    for (int i = 1; i < dir_length; i++) {
+        struct FAT32DirectoryEntry current_child = directory.table[i];
+        bool current_entry_name_equal = memcmp(current_child.name, request.name, 8) == 0;
+        bool current_entry_ext_equal = memcmp(current_child.ext, "dir", 3) == 0;
+        if (current_entry_ext_equal && current_entry_name_equal) {
+            return current_child.cluster_high << 16 | current_child.cluster_low;
+        }
+    }
+    return 0;
+}
+
+uint32_t move_to_parent_directory(struct FAT32DriverRequest request) {
+    struct FAT32DirectoryTable directory;
+    read_clusters(&directory, request.parent_cluster_number, 1);
+    return directory.table->cluster_high << 16 | directory.table->cluster_low;;
+}
+
 /**
  * Checking whether filesystem signature is missing or not in boot sector
  *

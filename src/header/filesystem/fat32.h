@@ -138,7 +138,8 @@ struct FAT32DriverRequest {
     uint32_t  buffer_size;
 } __attribute__((packed));
 
-
+uint32_t move_to_child_directory(struct FAT32DriverRequest request);
+uint32_t move_to_parent_directory(struct FAT32DriverRequest request);
 
 
 
