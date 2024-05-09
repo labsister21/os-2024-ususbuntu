@@ -48,6 +48,11 @@ void write_syscall(struct FAT32DriverRequest request, int32_t *retcode)
     syscall(2, (uint32_t)&request, (uint32_t)retcode, 0);
 }
 
+void delete_syscall(struct FAT32DriverRequest request, int32_t *retcode)
+{
+    syscall(3, (uint32_t)&request, (uint32_t)retcode, 0);
+}
+
 void get_user_input(char *buf)
 {
     syscall(4, (uint32_t)buf, 0, 0);
@@ -226,6 +231,142 @@ void mkdir(char *argument)
     }
 }
 
+void touch(char *argument)
+{
+    char ext[strlen(argument)];
+    split_by_first(argument, '.', ext);
+
+    uint8_t name_len = strlen(ext);
+    request.buffer_size = CLUSTER_SIZE;
+    request.buf = buf;
+    while (name_len < 8)
+    {
+        ext[name_len] = '\0';
+        name_len++;
+    }
+    memcpy(request.ext, argument, strlen(argument));
+    request.parent_cluster_number = cwd_cluster_number;
+    memcpy(request.name, ext, name_len);
+    read_syscall(request, &retcode);
+    if (retcode == 0)
+    {
+        puts("File'", 7, 0xF);
+        puts(request.name, 8, 0xF);
+        puts("' already exists.\n", 19, 0xF);
+    }
+    else if (retcode == 3)
+    {
+        memset(buf, 0, CLUSTER_SIZE);
+        write_syscall(request, &retcode);
+        if (retcode != 0)
+        {
+            puts("Unknown error.\n", 15, 0xF);
+        }
+        else
+        {
+            puts("File '", 8, 0xF);
+            puts(".", 1, 0xF);
+            puts(request.name, 8, 0xF);
+            puts("' created.\n", 12, 0xF);
+        }
+    }
+}
+
+void remove_space(char *str)
+{
+    int32_t len = strlen(str);
+    int32_t shift = 0;
+
+    for (int32_t i = 0; i < len; i++)
+    {
+        if (str[i] == ' ')
+        {
+            shift++;
+        }
+        else
+        {
+            str[i - shift] = str[i];
+        }
+    }
+    str[len - shift] = '\0';
+}
+
+void remove_petik(char *str)
+{
+    int32_t len = strlen(str);
+    int32_t shift = 0;
+
+    for (int32_t i = 0; i < len; i++)
+    {
+        if (str[i] == '"')
+        {
+            shift++;
+        }
+        else
+        {
+            str[i - shift] = str[i];
+        }
+    }
+    str[len - shift] = '\0';
+}
+
+void echo(char *argument)
+{
+    remove_space(argument);
+    char file[strlen(argument)];
+    split_by_first(file, '>', argument);
+    remove_petik(argument);
+
+    uint8_t name_len = strlen(file);
+    request.buffer_size = CLUSTER_SIZE;
+    while (name_len < 8)
+    {
+        file[name_len] = '\0';
+        name_len++;
+    }
+    int32_t length = strlen(argument);
+    while (length < 8)
+    {
+        argument[length] = '\0';
+        length++;
+    }
+    request.buf = argument;
+    request.parent_cluster_number = cwd_cluster_number;
+    char name[3];
+    split_by_first(file, '.', name);
+    memcpy(request.ext, file, strlen(file));
+    memcpy(request.name, name, strlen(name));
+    read_syscall(request, &retcode);
+    if (retcode == 0)
+    {
+        delete_syscall(request, &retcode);
+        write_syscall(request, &retcode);
+        if (retcode != 0)
+        {
+            puts("Unknown error.\n", 15, 0xF);
+        }
+        else
+        {
+            puts("File '", 8, 0xF);
+            puts(".", 1, 0xF);
+            puts(request.name, 8, 0xF);
+            puts("' updated.\n", 12, 0xF);
+        }
+    }
+    else if (retcode == 1)
+    {
+        puts("Not a file.\n", 12, 0xF);
+    }
+    else if (retcode == 3)
+    {
+        puts("Not found.\n", 11, 0xF);
+    }
+    else
+    {
+        puts("Unknown error", 13, 0xF);
+    }
+}
+
 int main(void)
 {
     buf[255] = '\0';
@@ -262,6 +403,25 @@ int main(void)
                 mkdir(argument);
             }
         }
+        else if (!memcmp(buf, "touch", 5))
+        {
+            char *argument = buf + 6;
+            remove_newline(argument);
+            if (strlen(argument) > 0)
+            {
+                touch(argument);
+            }
+        }
+        else if (!memcmp(buf, "echo", 4))
+        {
+            char *argument = buf + 5;
+            remove_newline(argument);
+            if (strlen(argument) > 0)
+            {
+                echo(argument);
+            }
+        }
+
     } while (true);
 
     return 0;
