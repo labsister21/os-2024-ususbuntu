@@ -95,6 +95,9 @@ void syscall(struct InterruptFrame frame)
   case (9):
     *((uint32_t *)frame.cpu.general.ecx) = move_to_parent_directory(*(struct FAT32DriverRequest *)frame.cpu.general.ebx);
     break;
+  case (10):
+    list_dir_content((char *)frame.cpu.general.ebx, frame.cpu.general.ecx);
+    break;
   }
 }
 
