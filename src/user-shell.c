@@ -48,10 +48,21 @@ void write_syscall(struct FAT32DriverRequest request, int32_t *retcode)
     syscall(2, (uint32_t)&request, (uint32_t)retcode, 0);
 }
 
+void delete_syscall(struct FAT32DriverRequest request, int32_t *retcode)
+{
+    syscall(3, (uint32_t)&request, (uint32_t)retcode, 0);
+}
+
 void get_user_input(char *buf)
 {
     syscall(4, (uint32_t)buf, 0, 0);
 }
+
+// void putchar(char *buf)
+// {
+//     syscall(5, (uint32_t)buf, 0, 0);
+// }
+
 
 void puts(char *str, uint32_t len, uint32_t color)
 {
@@ -226,6 +237,39 @@ void mkdir(char *argument)
     }
 }
 
+void rm(char *argument)
+{
+    uint8_t name_len = strlen(argument);
+    request.buffer_size = 0;
+    request.buf = buf;
+
+    while (name_len < 8)
+    {
+        argument[name_len] = '\0';
+        name_len++;
+    }
+
+    memcpy(request.ext, "dir", 3);
+    request.parent_cluster_number = cwd_cluster_number;
+    memcpy(request.name, argument, name_len);
+    delete_syscall(request, &retcode);
+    if(retcode == 0){
+        puts("Success: Folder '", 17, 0xF);
+        puts(request.name, 8, 0xF);
+        puts("' is deleted.\n", 15, 0xF);
+    }else if(retcode == 1){
+        puts("Cannot remove: Folder'", 22, 0xF);
+        puts(request.name, 8, 0xF);
+        puts("' is not found.\n", 17, 0xF);
+    }else if(retcode == 2){
+        puts("Cannot remove: Folder'", 22, 0xF);
+        puts(request.name, 8, 0xF);
+        puts("' is not empty.\n", 17, 0xF);
+    }else if(retcode == -1){
+        puts("Unknown error.\n", 15, 0xF);
+    }
+}
+
 int main(void)
 {
     buf[255] = '\0';
@@ -260,6 +304,14 @@ int main(void)
             if (strlen(argument) > 0)
             {
                 mkdir(argument);
+            }
+        }
+        else if(!memcmp(buf, "rm", 2))
+        {
+            char *argument = buf + 3;
+            remove_newline(argument);
+            if(strlen(argument) > 0){
+                rm(argument);
             }
         }
     } while (true);
