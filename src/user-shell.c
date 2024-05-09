@@ -231,6 +231,29 @@ void mkdir(char *argument)
     }
 }
 
+void cat(char *argument){
+    char ext[strlen(argument)];
+    split_by_first(argument, '.', ext);
+
+    uint8_t name_len = strlen(ext);
+    request.buffer_size = CLUSTER_SIZE;
+    request.buf = buf;
+    while (name_len < 8)
+    {
+        ext[name_len] = '\0';
+        name_len++;
+    }
+    memcpy(request.ext, argument, strlen(argument));
+    request.parent_cluster_number = cwd_cluster_number;
+    memcpy(request.name, ext, name_len);
+    read_syscall(request, &retcode);
+    if (retcode!=0){
+        puts("No such file\n", 13, 0x4);
+    }
+    puts(request.buf, strlen(request.buf), 0xF);
+    puts("\n", 1, 0xF);
+}
+
 void touch(char *argument)
 {
     char ext[strlen(argument)];
@@ -401,6 +424,15 @@ int main(void)
             if (strlen(argument) > 0)
             {
                 mkdir(argument);
+            }
+        }
+        else if (!memcmp(buf, "cat", 3))
+        {
+            char *argument = buf + 4;
+            remove_newline(argument);
+            if (strlen(argument) > 0)
+            {
+                cat(argument);
             }
         }
         else if (!memcmp(buf, "touch", 5))
