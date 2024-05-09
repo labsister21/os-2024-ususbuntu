@@ -299,12 +299,12 @@ int main(void)
         }
         else if (!memcmp(buf, "ls", 2))
         {
-            request.buf = buf;
-            syscall(10, (uint32_t) request.buf, cwd_cluster_number, 0);
-            if (request.buf == 0) {
+            buf[0] = '\0';
+            syscall(10, (uint32_t) buf, cwd_cluster_number, 0);
+            if (buf[0] == '\0') {
                 puts("Directory Empty\n", 16, 0x4);
             } else {
-                puts(request.buf, strlen(request.buf), 0xF);
+                puts(buf, strlen(buf), 0xF);
             }
         }
         else if (!memcmp(buf, "mkdir", 5))

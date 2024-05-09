@@ -396,36 +396,36 @@ int8_t delete(struct FAT32DriverRequest request) {
     return 1;
 }
 
-void list_dir_content(char* buffer, uint32_t directory_cluster_number) {
-    struct FAT32DirectoryTable directory;
-    read_clusters(&directory, directory_cluster_number, 1);
+void list_dir_content(char* buffer, uint32_t dir_cluster_number) {
+    struct FAT32DirectoryTable dirtable;
+    read_clusters(&dirtable, dir_cluster_number, 1);
     int dir_length = sizeof(struct FAT32DirectoryTable)/sizeof(struct FAT32DirectoryEntry);
     int idx = 0;
     for (int i = 1; i < dir_length; i++) {
-        struct FAT32DirectoryEntry current_child = directory.table[i];
-        bool current_child_name_na = memcmp(current_child.name, "\0\0\0\0\0\0\0\0", 8) == 0;
-        bool current_child_ext_na = memcmp(current_child.ext, "\0\0\0", 3) == 0;
-        if (current_child_name_na && current_child_ext_na) {
+        struct FAT32DirectoryEntry current_content = dirtable.table[i];
+        bool is_current_content_name_na = memcmp(current_content.name, "\0\0\0\0\0\0\0\0", 8) == 0;
+        bool is_current_content_ext_na = memcmp(current_content.ext, "\0\0\0", 3) == 0;
+        if (is_current_content_name_na && is_current_content_ext_na) {
             continue;
         } else {
             for (int j = 0; j <= 8; j++) {
-                if (current_child.name[j] == '\0') {
+                if (current_content.name[j] == '\0') {
                     break;
                 }
-                buffer[idx] = current_child.name[j];
+                buffer[idx] = current_content.name[j];
                 idx++;
             }
-            if (memcmp(current_child.ext, "dir", 3) == 1) {
+            if (memcmp(current_content.ext, "dir", 3) == 1) { // file
                 buffer[idx] = '.';
                 idx++;
                 for (int j = 0; j <= 3; j++) {
-                    if (current_child.ext[j] == '\0') {
+                    if (current_content.ext[j] == '\0') {
                         break;
                     }
-                    buffer[idx] = current_child.ext[j];
+                    buffer[idx] = current_content.ext[j];
                     idx++;
                 }
-            } else if (memcmp(current_child.ext, "dir", 3) == 0){
+            } else if (memcmp(current_content.ext, "dir", 3) == 0){ //folder
                 buffer[idx] = '/';
                 idx++;
             }
