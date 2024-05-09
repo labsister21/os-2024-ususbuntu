@@ -94,6 +94,138 @@ void remove_newline(char *str)
     }
 }
 
+void split_by_first(char *pstr, char by, char *result)
+{
+    int i = 0;
+    while (pstr[i] != '\0' && pstr[i] != by)
+    {
+        result[i] = pstr[i];
+        i++;
+    }
+    result[i] = '\0';
+
+    if (pstr[i] == by)
+    {
+        i++;
+        int j = 0;
+        while (pstr[i] != '\0')
+        {
+            pstr[j] = pstr[i];
+            i++;
+            j++;
+        }
+        pstr[j] = '\0';
+    }
+    else
+    {
+        *pstr = '\0';
+    }
+}
+
+int32_t is_include(char *str, char target)
+{
+    while (*str != '\0')
+    {
+        if (*str == target)
+        {
+            return 1;
+        }
+        str++;
+    }
+    return 0;
+}
+
+void cd(char *argument)
+{
+    if (memcmp("..", argument, 2) == 0 && strlen(argument) == 2)
+    {
+        request.parent_cluster_number = cwd_cluster_number;
+        if (cwd_cluster_number != ROOT_CLUSTER_NUMBER)
+        {
+            move_parent_dir(request, &retcode);
+            cwd_cluster_number = retcode;
+            currentdirlen -= 2;
+            while (current_dir[currentdirlen] != '/')
+            {
+                current_dir[currentdirlen] = '\0';
+                currentdirlen--;
+            }
+            current_dir[currentdirlen] = '/';
+            currentdirlen++;
+        }
+    }
+    else
+    {
+        request.buffer_size = CLUSTER_SIZE;
+        request.buf = buf;
+        memcpy(request.name, argument, strlen(argument));
+        int idx = strlen(argument);
+        while (idx <= 7)
+        {
+            request.name[idx] = '\0';
+            idx++;
+        }
+        memcpy(request.ext, "dir", 3);
+        request.parent_cluster_number = cwd_cluster_number;
+        read_dir_syscall(request, &retcode);
+        if (retcode == 0)
+        {
+            move_child_dir(request, &retcode);
+            cwd_cluster_number = retcode;
+            int32_t idx = 0;
+            while (idx < strlen(request.name) && idx < 8)
+            {
+                current_dir[currentdirlen] = request.name[idx];
+                currentdirlen++;
+                idx++;
+            }
+            current_dir[currentdirlen] = '/';
+            currentdirlen++;
+        }
+        else if (retcode == 2)
+        {
+            puts("Folder not found.\n", 18, 0xF);
+        }
+    }
+}
+
+void mkdir(char *argument)
+{
+    uint8_t name_len = strlen(argument);
+    request.buffer_size = 0;
+    request.buf = buf;
+    while (name_len < 8)
+    {
+        argument[name_len] = '\0';
+        name_len++;
+    }
+    memcpy(request.ext, "dir", 3);
+    request.parent_cluster_number = cwd_cluster_number;
+    memcpy(request.name, argument, name_len);
+    read_dir_syscall(request, &retcode);
+    if (retcode == 0)
+    {
+        puts("Folder'", 7, 0xF);
+        puts(request.name, 8, 0xF);
+        puts("' already exists.\n", 19, 0xF);
+    }
+    else if (retcode == 2)
+    {
+        memset(buf, 0, CLUSTER_SIZE);
+        write_syscall(request, &retcode);
+        if (retcode != 0)
+        {
+            puts("Unknown error.\n", 15, 0xF);
+        }
+        else
+        {
+            puts("Folder '", 8, 0xF);
+            puts(request.name, 8, 0xF);
+            puts("' created.\n", 12, 0xF);
+        }
+    }
+}
+
 int main(void)
 {
     buf[255] = '\0';
@@ -106,93 +238,28 @@ int main(void)
         {
             char *argument = buf + 3;
             remove_newline(argument);
-            if (memcmp("..", argument, 2) == 0 && strlen(argument) == 2)
+            while (true)
             {
-                request.parent_cluster_number = cwd_cluster_number;
-                if (cwd_cluster_number != ROOT_CLUSTER_NUMBER)
+                if (is_include(argument, '/'))
                 {
-                    move_parent_dir(request, &retcode);
-                    cwd_cluster_number = retcode;
-                    currentdirlen -= 2;
-                    while (current_dir[currentdirlen] != '/')
-                    {
-                        current_dir[currentdirlen] = '\0';
-                        currentdirlen--;
-                    }
-                    current_dir[currentdirlen] = '/';
-                    currentdirlen++;
+                    char res[strlen(argument)];
+                    split_by_first(argument, '/', res);
+                    cd(res);
                 }
-            }
-            else
-            {
-                request.buffer_size = CLUSTER_SIZE;
-                request.buf = buf;
-                memcpy(request.name, argument, strlen(argument));
-                int idx = strlen(argument);
-                while (idx <= 7)
+                else
                 {
-                    request.name[idx] = '\0';
-                    idx++;
-                }
-                memcpy(request.ext, "dir", 3);
-                request.parent_cluster_number = cwd_cluster_number;
-                read_dir_syscall(request, &retcode);
-                if (retcode == 0)
-                {
-                    move_child_dir(request, &retcode);
-                    cwd_cluster_number = retcode;
-                    int32_t idx = 0;
-                    while (idx < strlen(request.name))
-                    {
-                        current_dir[currentdirlen] = request.name[idx];
-                        currentdirlen++;
-                        idx++;
-                    }
-                    current_dir[currentdirlen] = '/';
-                    currentdirlen++;
-                }
-                else if (retcode == 2)
-                {
-                    puts("Folder not found.\n", 18, 0xF);
+                    cd(argument);
+                    break;
                 }
             }
         }
         else if (!memcmp(buf, "mkdir", 5))
         {
-            char *dirname = buf + 6;
-            remove_newline(dirname);
-            uint8_t name_len = strlen(dirname);
-            request.buffer_size = 0;
-            request.buf = buf;
-            while (name_len < 8)
+            char *argument = buf + 6;
+            remove_newline(argument);
+            if (strlen(argument) > 0)
             {
-                dirname[name_len] = '\0';
-                name_len++;
-            }
-            memcpy(request.ext, "dir", 3);
-            request.parent_cluster_number = cwd_cluster_number;
-            memcpy(request.name, dirname, name_len);
-            read_dir_syscall(request, &retcode);
-            if (retcode == 0)
-            {
-                puts("Folder'", 7, 0xF);
-                puts(request.name, 8, 0xF);
-                puts("' already exists.\n", 19, 0xF);
-            }
-            else if (retcode == 2)
-            {
-                memset(buf, 0, CLUSTER_SIZE);
-                write_syscall(request, &retcode);
-                if (retcode != 0)
-                {
-                    puts("Unknown error.\n", 15, 0xF);
-                }
-                else
-                {
-                    puts("Folder '", 8, 0xF);
-                    puts(request.name, 8, 0xF);
-                    puts("' created.\n", 12, 0xF);
-                }
+                mkdir(argument);
             }
         }
     } while (true);
