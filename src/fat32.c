@@ -476,14 +476,16 @@ void all_list_dir_content(char* buffer, uint32_t dir_cluster_number) {
                 buffer[dir_idx] = '\n';
                 dir_idx++;
 
-                buffer[dir_idx] = ' ';
-                dir_idx++;
+                for(int i = 0; i <= level; i++){
+                    buffer[dir_idx] = ' ';
+                    dir_idx++;
 
-                buffer[dir_idx] = ' ';
-                dir_idx++;
+                    buffer[dir_idx] = ' ';
+                    dir_idx++;
 
-                buffer[dir_idx] = ' ';
-                dir_idx++;
+                    buffer[dir_idx] = ' ';
+                    dir_idx++;
+                }
 
                 // Recursively print the contents of the subdirectory
                 uint32_t sub_dir_cluster_number = current_content.cluster_low | (current_content.cluster_high << 16);

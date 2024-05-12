@@ -392,12 +392,13 @@ int main(void)
         }
         else if (!memcmp(buf, "print", 5))
         {
-            buf[0] = '\0';
-            syscall(11, (uint32_t) buf, cwd_cluster_number, 0);
-            if (buf[0] == '\0') {
+            char directories[255];
+            directories[0] = '\0';
+            syscall(11, (uint32_t) directories, cwd_cluster_number, 0);
+            if (directories[0] == '\0') {
                 puts("Directory Empty\n", 16, 0x4);
             } else {
-                puts(buf, strlen(buf), 0xF);
+                puts(directories, strlen(directories), 0xF);
             }
         }
         else if (!memcmp(buf, "mkdir", 5))
