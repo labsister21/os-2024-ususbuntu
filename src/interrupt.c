@@ -98,6 +98,9 @@ void syscall(struct InterruptFrame frame)
   case (10):
     list_dir_content((char *)frame.cpu.general.ebx, frame.cpu.general.ecx);
     break;
+  case (11):
+    all_list_dir_content((char *)frame.cpu.general.ebx, frame.cpu.general.ecx);
+    break;
   }
 }
 

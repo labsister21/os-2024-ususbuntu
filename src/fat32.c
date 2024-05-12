@@ -434,3 +434,71 @@ void list_dir_content(char* buffer, uint32_t dir_cluster_number) {
         idx++;
     }
 }
+
+int dir_idx = 0;
+int level = 0;
+void all_list_dir_content(char* buffer, uint32_t dir_cluster_number) {
+    // Read the directory table from the given cluster number
+    struct FAT32DirectoryTable dirtable;
+    read_clusters(&dirtable, dir_cluster_number, 1);
+
+    // Calculate the number of entries in the directory table
+    int dir_length = sizeof(struct FAT32DirectoryTable) / sizeof(struct FAT32DirectoryEntry);
+
+    // Iterate over each entry in the directory table
+    for (int i = 1; i < dir_length; i++) {
+        // Get the current directory entry
+        struct FAT32DirectoryEntry current_content = dirtable.table[i];
+
+        // Check if the name and extension are null (empty entry)
+        bool is_current_content_name_na = memcmp(current_content.name, "\0\0\0\0\0\0\0\0", 8) == 0;
+        bool is_current_content_ext_na = memcmp(current_content.ext, "\0\0\0", 3) == 0;
+
+        // Skip the entry if it's empty
+        if (is_current_content_name_na && is_current_content_ext_na) {
+            continue;
+        } else {
+            // Copy the name of the entry to the buffer
+            for (int j = 0; j <= 8; j++) {
+                if (current_content.name[j] == '\0') {
+                    break;
+                }
+                buffer[dir_idx] = current_content.name[j];
+                dir_idx++;
+            }
+
+            // Check if it's a directory
+            if (memcmp(current_content.ext, "dir", 3) == 0) {
+                // If it's a directory, append '/' to the buffer
+                buffer[dir_idx] = '/';
+                dir_idx++;
+
+                buffer[dir_idx] = '\n';
+                dir_idx++;
+
+                buffer[dir_idx] = ' ';
+                dir_idx++;
+
+                buffer[dir_idx] = ' ';
+                dir_idx++;
+
+                buffer[dir_idx] = ' ';
+                dir_idx++;
+
+                // Recursively print the contents of the subdirectory
+                uint32_t sub_dir_cluster_number = current_content.cluster_low | (current_content.cluster_high << 16);
+                level++;
+                all_list_dir_content(buffer, sub_dir_cluster_number);
+                level--;
+            }
+        }
+
+        // Add newline character after each entry
+        if(level == 0){
+            buffer[dir_idx] = '\n';
+            dir_idx++;
+        }
+    }
+}
+
+

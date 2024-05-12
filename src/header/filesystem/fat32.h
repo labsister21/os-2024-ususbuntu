@@ -254,4 +254,9 @@ int8_t delete(struct FAT32DriverRequest request);
 Get children of this directory
 */
 void list_dir_content(char* buffer, uint32_t directory_cluster_number);
+
+/*
+Get filesystem content
+*/
+void all_list_dir_content(char* buffer, uint32_t dir_cluster_number);
 #endif

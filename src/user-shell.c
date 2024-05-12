@@ -258,15 +258,68 @@ void rm(char *argument)
         puts(request.name, 8, 0xF);
         puts("' is deleted.\n", 15, 0xF);
     }else if(retcode == 1){
-        puts("Cannot remove: Folder'", 22, 0xF);
+        puts("Cannot remove: Folder '", 22, 0xF);
         puts(request.name, 8, 0xF);
         puts("' is not found.\n", 17, 0xF);
     }else if(retcode == 2){
-        puts("Cannot remove: Folder'", 22, 0xF);
+        puts("Cannot remove: Folder '", 22, 0xF);
         puts(request.name, 8, 0xF);
         puts("' is not empty.\n", 17, 0xF);
     }else if(retcode == -1){
         puts("Unknown error.\n", 15, 0xF);
+    }
+}
+
+void find(char *argument)
+{
+    uint8_t name_len = strlen(argument);
+    request.buffer_size = CLUSTER_SIZE;
+    request.buf = buf;
+
+    // Ensure the argument is null-terminated and padded to 8 characters
+    while (name_len < 8)
+    {
+        argument[name_len] = '\0';
+        name_len++;
+    }
+
+    // Set the name and extension for the directory
+    memcpy(request.name, argument, name_len);
+    memcpy(request.ext, "dir", 3);
+    request.parent_cluster_number = cwd_cluster_number;
+
+    // Read the directory
+    read_dir_syscall(request, &retcode);
+
+    if (retcode == 0)
+    {
+        // Directory found, iterate over its contents
+        int32_t idx = 0;
+        char path[255];
+        memcpy(path, "shell\\", 6);
+        int pathlen = 6;
+
+        while (idx < strlen(request.name) && idx < 8)
+        {
+            path[pathlen] = request.name[idx];
+            pathlen++;
+            idx++;
+        }
+        path[pathlen] = '\\';
+        pathlen++;
+
+        // Print the directory path
+        puts(path, pathlen, 0xF);
+        puts("\n", 1, 0xF);
+    }
+    else if (retcode == 2)
+    {
+        puts("Directory not found.\n", 21, 0xF);
+    }
+    else if (retcode == 1)
+    {
+        puts("File process TBA!\n", 18, 0xF);
+        // Not a directory, possibly a file
     }
 }
 
@@ -307,6 +360,16 @@ int main(void)
                 puts(buf, strlen(buf), 0xF);
             }
         }
+        else if (!memcmp(buf, "print", 5))
+        {
+            buf[0] = '\0';
+            syscall(11, (uint32_t) buf, cwd_cluster_number, 0);
+            if (buf[0] == '\0') {
+                puts("Directory Empty\n", 16, 0x4);
+            } else {
+                puts(buf, strlen(buf), 0xF);
+            }
+        }
         else if (!memcmp(buf, "mkdir", 5))
         {
             char *argument = buf + 6;
@@ -322,6 +385,14 @@ int main(void)
             remove_newline(argument);
             if(strlen(argument) > 0){
                 rm(argument);
+            }
+        }
+        else if(!memcmp(buf, "find", 4))
+        {
+            char *argument = buf + 5;
+            remove_newline(argument);
+            if(strlen(argument) > 0){
+                find(argument);
             }
         }
     } while (true);
