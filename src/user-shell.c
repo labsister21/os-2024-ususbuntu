@@ -237,6 +237,36 @@ void mkdir(char *argument)
     }
 }
 
+void cat(char *argument){
+    char filename[strlen(argument)];
+    split_by_first(argument, '.', filename);
+
+    uint8_t name_len = strlen(filename);
+    request.buffer_size = CLUSTER_SIZE;
+    request.buf = buf;
+    while (name_len < 8)
+    {
+        filename[name_len] = '\0';
+        name_len++;
+    }
+    memcpy(request.name, filename, name_len);
+    memcpy(request.ext, argument, strlen(argument));
+    request.parent_cluster_number = cwd_cluster_number;
+    read_syscall(request, &retcode);
+    if (retcode==0){
+        puts(request.buf, strlen(request.buf), 0xF);
+        puts("\n", 1, 0xF);
+    } else if (retcode==1){
+        puts("Not a file\n", 11, 0x4);
+    } else if (retcode==2){
+        puts("Not enough buffer\n", 18, 0x4);
+    } else if (retcode==-1){
+        puts("Unknown error -1\n", 17, 0x4);
+    } else {
+        puts("Unknown error\n", 14, 0x4);
+    }
+}
+
 void rm(char *argument)
 {
     uint8_t name_len = strlen(argument);
@@ -377,6 +407,15 @@ int main(void)
             if (strlen(argument) > 0)
             {
                 mkdir(argument);
+            }
+        }
+        else if (!memcmp(buf, "cat", 3))
+        {
+            char *argument = buf + 4;
+            remove_newline(argument);
+            if (strlen(argument) > 0)
+            {
+                cat(argument);
             }
         }
         else if(!memcmp(buf, "rm", 2))

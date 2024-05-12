@@ -30,6 +30,35 @@ void write_blocks(const void *ptr, uint32_t logical_block_address, uint8_t block
     }
 }
 
+void split_by_first_inserter(char *pstr, char by, char *result)
+{
+    int i = 0;
+    while (pstr[i] != '\0' && pstr[i] != by)
+    {
+        result[i] = pstr[i];
+        i++;
+    }
+    result[i] = '\0';
+
+    if (pstr[i] == by)
+    {
+        i++;
+        int j = 0;
+        while (pstr[i] != '\0')
+        {
+            pstr[j] = pstr[i];
+            i++;
+            j++;
+        }
+        pstr[j] = '\0';
+    }
+    else
+    {
+        *pstr = '\0';
+    }
+}
+
+
 int main(int argc, char *argv[]) {
     if (argc < 4) {
         fprintf(stderr, "inserter: ./inserter <file to insert> <parent cluster index> <storage>\n");
@@ -55,8 +84,17 @@ int main(int argc, char *argv[]) {
         fclose(fptr_target);
     }
 
-    printf("Filename : %s\n",  argv[1]);
+    printf("Filepath : %s\n",  argv[1]);
     printf("Filesize : %ld bytes\n", filesize);
+
+    char filename[strlen(argv[1])];
+    split_by_first_inserter(argv[1], '.', filename);
+    uint8_t name_len = strlen(filename);
+    while (name_len < 8)
+    {
+        filename[name_len] = '\0';
+        name_len++;
+    }
 
     // FAT32 operations
     initialize_filesystem_fat32();
@@ -66,7 +104,8 @@ int main(int argc, char *argv[]) {
         .buffer_size = filesize,
     };
     sscanf(argv[2], "%u",  &request.parent_cluster_number);
-    sscanf(argv[1], "%8s", request.name);
+    memcpy(request.name, filename, name_len);
+    memcpy(request.ext, argv[1], strlen(argv[1]));
     int retcode = write(request);
     switch (retcode) {
         case 0:  puts("Write success"); break;
