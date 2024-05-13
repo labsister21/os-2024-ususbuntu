@@ -444,6 +444,14 @@ void cp(char *argument)
   }
 }
 
+void mv(char *argument)
+{
+  char *temp;
+  memcpy(temp, argument, strlen(argument));
+  cp(temp);
+  rm(temp);
+}
+
 int main(void)
 {
   buf[255] = '\0';
@@ -543,6 +551,16 @@ int main(void)
         cp(argument);
       }
     }
+    else if (!memcmp(buf, "mv", 2))
+    {
+      char *argument = buf + 3;
+      remove_newline(argument);
+      if (strlen(argument) > 0)
+      {
+        mv(argument);
+      }
+    }
+
     else if (!memcmp(buf, "exit", 4))
     {
       break;
