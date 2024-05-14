@@ -369,80 +369,74 @@ void find(char *argument)
   }
 }
 
-// // argument semua teks setelah cp
-// void cp(char *argument)
-// {
-//   char *source;
-//   split_by_first(argument, ' ', source); // source berisi path file yang akan dicopy, argument berisi sisanya
+// argument semua teks setelah cp
+void cp(char *argument)
+{
+  char source[12];
+  split_by_first(argument, ' ', source); // source berisi path file yang akan dicopy, argument berisi sisanya
 
-//   char *source_name;
-//   split_by_first(source, '.', source_name); // source_name berisi nama file yang akan dicopy, source berisi eksensinya
-//   uint8_t source_name_len = strlen(source_name);
+  char source_name[8];
+  split_by_first(source, '.', source_name); // source_name berisi nama file yang akan dicopy, source berisi eksensinya
+  uint8_t source_name_len = strlen(source_name);
 
-//   while (source_name_len < 8)
-//   {
-//     source_name[source_name_len] = '\0';
-//     source_name_len++;
-//   }
+  while (source_name_len < 8)
+  {
+    source_name[source_name_len] = '\0';
+    source_name_len++;
+  }
 
-//   memcpy(request.name, source_name, source_name_len);
-//   memcpy(request.ext, source, strlen(source));
-//   request.parent_cluster_number = cwd_cluster_number;
+  memcpy(request.name, source_name, source_name_len);
+  memcpy(request.ext, source, strlen(source));
+  request.parent_cluster_number = cwd_cluster_number;
 
-//   read_syscall(request, &retcode);
+  read_syscall(request, &retcode);
 
-//   if (retcode == 0)
-//   {
-//     puts("Source file found\n", 10, 0xF);
-//     char *content;
-//     memcpy(content, request.buf, strlen(request.buf)); // mengcopy isi dari source fi;e
+  if (retcode == 0)
+  {
+    puts("Source file found\n", 20, 0xF);
+    if (is_include(argument, '/'))
+    {
+      char dest[12];
+      char dir[8];
+      while (strlen(argument) != 0) // traversing the directory path
+      {                             // NOTE: PARENT CWD NOT SET YET
+        split_by_first(argument, '/', dest);
+        split_by_first(dest, '.', dir);
 
-//     if (!is_include(argument, '/')) // kondisi mencopy di cwd
-//     {
-//       char *target_name;
-//       split_by_first(argument, '.', target_name); // target_name berisi nama file yang akan dicopy, argument berisi eksensinya
-//       uint8_t target_name_len = strlen(target_name);
-//       while (target_name_len < 8)
-//       {
-//         target_name[target_name_len] = '\0';
-//         target_name_len++;
-//       }
+        // read if directory exist
+        request.buffer_size = CLUSTER_SIZE;
+        memcpy(request.name, dir, strlen(dir));
+        memcpy(request.ext, "dir", 3);
 
-//       memcpy(request.name, target_name, target_name_len);
-//       memcpy(request.ext, argument, strlen(argument));
+        read_dir_syscall(request, &retcode);
 
-//       read_syscall(request, &retcode);
-
-//       if (retcode == 0)
-//       {
-//         puts("Deleting Existing file\n", 25, 0xF);
-//         delete_syscall(request, &retcode);
-//       }
-
-//       memcpy(request.buf, content, strlen(content));
-//       request.buffer_size = strlen(content);
-
-//       write_syscall(request, &retcode);
-
-//       if (retcode == 0)
-//       {
-//         puts("File copied successfully\n", 24, 0xF);
-//       }
-//       else
-//       {
-//         puts("Failed to copy file\n", 20, 0xF);
-//       }
-//     }
-//     else // kondisi mencopy ke path tertentu
-//     {
-//       puts("Copying to path\n", 16, 0xF); // TBA
-//     }
-//   }
-//   else
-//   {
-//     puts("Source file not found\n", 14, 0xF);
-//   }
-// }
+        if (retcode != 0) // check if directory exist
+        {
+          puts("Destination", 31, 0xF);
+          puts(dir, strlen(dir), 0xF);
+          puts("not found\n", 10, 0xF);
+          return;
+        }
+        continue;
+      }
+      memcpy(request.name, source_name, source_name_len);
+      memcpy(request.ext, source, strlen(source));
+      read_syscall(request, &retcode);
+      if (retcode == 0)
+      {
+        puts("File already exist\n", 19, 0xF);
+        return;
+      }
+    }
+    else
+    {
+    }
+  }
+  else
+  {
+    puts("Source file not found\n", 24, 0xF);
+  }
+}
 
 // void mv(char *argument)
 // {
@@ -454,164 +448,164 @@ void find(char *argument)
 
 void touch(char *argument)
 {
-    char filename[8];
-    split_by_first(argument, '.', filename);
+  char filename[8];
+  split_by_first(argument, '.', filename);
 
-    request.buffer_size = CLUSTER_SIZE;
-    request.buf = buf;
-    if (strlen(filename) < 8)
+  request.buffer_size = CLUSTER_SIZE;
+  request.buf = buf;
+  if (strlen(filename) < 8)
+  {
+    filename[strlen(filename)] = '\0';
+  }
+  else
+  {
+    filename[8] = '\0';
+  }
+  if (strlen(argument) < 3)
+  {
+    argument[strlen(argument)] = '\0';
+  }
+  else
+  {
+    argument[3] = '\0';
+  }
+
+  memcpy(request.ext, argument, 3);
+  request.parent_cluster_number = cwd_cluster_number;
+  memcpy(request.name, filename, 8);
+
+  read_syscall(request, &retcode);
+  if (retcode == 0)
+  {
+    puts("File'", 7, 0xF);
+    puts(request.name, 8, 0xF);
+    puts(".", 1, 0xF);
+    puts(request.ext, 3, 0xF);
+    puts("' already exists.\n", 19, 0xF);
+  }
+  else if (retcode == 3)
+  {
+    memset(buf, 0, CLUSTER_SIZE);
+    write_syscall(request, &retcode);
+    if (retcode != 0)
     {
-        filename[strlen(filename)] = '\0';
+      puts("Unknown error.\n", 15, 0xF);
     }
     else
     {
-        filename[8] = '\0';
+      puts("File '", 8, 0xF);
+      puts(request.name, 8, 0xF);
+      puts(".", 1, 0xF);
+      puts(request.ext, 3, 0xF);
+      puts("' created.\n", 12, 0xF);
     }
-    if (strlen(argument) < 3)
-    {
-        argument[strlen(argument)] = '\0';
-    }
-    else
-    {
-        argument[3] = '\0';
-    }
-
-    memcpy(request.ext, argument, 3);
-    request.parent_cluster_number = cwd_cluster_number;
-    memcpy(request.name, filename, 8);
-
-    read_syscall(request, &retcode);
-    if (retcode == 0)
-    {
-        puts("File'", 7, 0xF);
-        puts(request.name, 8, 0xF);
-        puts(".", 1, 0xF);
-        puts(request.ext, 3, 0xF);
-        puts("' already exists.\n", 19, 0xF);
-    }
-    else if (retcode == 3)
-    {
-        memset(buf, 0, CLUSTER_SIZE);
-        write_syscall(request, &retcode);
-        if (retcode != 0)
-        {
-            puts("Unknown error.\n", 15, 0xF);
-        }
-        else
-        {
-            puts("File '", 8, 0xF);
-            puts(request.name, 8, 0xF);
-            puts(".", 1, 0xF);
-            puts(request.ext, 3, 0xF);
-            puts("' created.\n", 12, 0xF);
-        }
-    }
+  }
 }
 
 void remove_space(char *str)
 {
-    int32_t len = strlen(str);
-    int32_t shift = 0;
+  int32_t len = strlen(str);
+  int32_t shift = 0;
 
-    for (int32_t i = 0; i < len; i++)
+  for (int32_t i = 0; i < len; i++)
+  {
+    if (str[i] == ' ')
     {
-        if (str[i] == ' ')
-        {
-            shift++;
-        }
-        else
-        {
-            str[i - shift] = str[i];
-        }
+      shift++;
     }
-    str[len - shift] = '\0';
+    else
+    {
+      str[i - shift] = str[i];
+    }
+  }
+  str[len - shift] = '\0';
 }
 
 void remove_petik(char *str)
 {
-    int32_t len = strlen(str);
-    int32_t shift = 0;
+  int32_t len = strlen(str);
+  int32_t shift = 0;
 
-    for (int32_t i = 0; i < len; i++)
+  for (int32_t i = 0; i < len; i++)
+  {
+    if (str[i] == '"')
     {
-        if (str[i] == '"')
-        {
-            shift++;
-        }
-        else
-        {
-            str[i - shift] = str[i];
-        }
+      shift++;
     }
-    str[len - shift] = '\0';
+    else
+    {
+      str[i - shift] = str[i];
+    }
+  }
+  str[len - shift] = '\0';
 }
 
 void echo(char *argument)
 {
-    remove_space(argument);
-    remove_petik(argument);
-    char text[strlen(argument)];
-    split_by_first(argument, '>', text);
+  remove_space(argument);
+  remove_petik(argument);
+  char text[strlen(argument)];
+  split_by_first(argument, '>', text);
 
-    request.buffer_size = CLUSTER_SIZE;
-    text[strlen(text)] = '\0';
+  request.buffer_size = CLUSTER_SIZE;
+  text[strlen(text)] = '\0';
 
-    request.parent_cluster_number = cwd_cluster_number;
-    char name[8];
-    split_by_first(argument, '.', name);
+  request.parent_cluster_number = cwd_cluster_number;
+  char name[8];
+  split_by_first(argument, '.', name);
 
-    if (strlen(argument) < 3)
+  if (strlen(argument) < 3)
+  {
+    argument[strlen(argument)] = '\0';
+  }
+  else
+  {
+    argument[8] = '\0';
+  }
+  if (strlen(name) < 3)
+  {
+    name[strlen(name)] = '\0';
+  }
+  else
+  {
+    name[8] = '\0';
+  }
+
+  request.buf = text;
+  memcpy(request.ext, argument, 3);
+  memcpy(request.name, name, 8);
+
+  read_syscall(request, &retcode);
+  if (retcode == 0)
+  {
+    delete_syscall(request, &retcode);
+    write_syscall(request, &retcode);
+
+    if (retcode != 0)
     {
-        argument[strlen(argument)] = '\0';
+      puts("Unknown error.\n", 15, 0xF);
     }
     else
     {
-        argument[8] = '\0';
+      puts("File '", 8, 0xF);
+      puts(request.name, 8, 0xF);
+      puts(".", 1, 0xF);
+      puts(request.ext, 3, 0xF);
+      puts("' updated.\n", 12, 0xF);
     }
-    if (strlen(name) < 3)
-    {
-        name[strlen(name)] = '\0';
-    }
-    else
-    {
-        name[8] = '\0';
-    }
-
-    request.buf = text;
-    memcpy(request.ext, argument, 3);
-    memcpy(request.name, name, 8);
-
-    read_syscall(request, &retcode);
-    if (retcode == 0)
-    {
-        delete_syscall(request, &retcode);
-        write_syscall(request, &retcode);
-
-        if (retcode != 0)
-        {
-            puts("Unknown error.\n", 15, 0xF);
-        }
-        else
-        {
-            puts("File '", 8, 0xF);
-            puts(request.name, 8, 0xF);
-            puts(".", 1, 0xF);
-            puts(request.ext, 3, 0xF);
-            puts("' updated.\n", 12, 0xF);
-        }
-    }
-    else if (retcode == 1)
-    {
-        puts("Not a file.\n", 12, 0xF);
-    }
-    else if (retcode == 3)
-    {
-        puts("Not found.\n", 11, 0xF);
-    }
-    else
-    {
-        puts("Unknown error", 13, 0xF);
-    }
+  }
+  else if (retcode == 1)
+  {
+    puts("Not a file.\n", 12, 0xF);
+  }
+  else if (retcode == 3)
+  {
+    puts("Not found.\n", 11, 0xF);
+  }
+  else
+  {
+    puts("Unknown error", 13, 0xF);
+  }
 }
 
 int main(void)
@@ -676,24 +670,25 @@ int main(void)
       {
         mkdir(argument);
       }
-    } else if (!memcmp(buf, "touch", 5))
-        {
-            char *argument = buf + 6;
-            remove_newline(argument);
-            if (strlen(argument) > 0)
-            {
-                touch(argument);
-            }
-        }
-        else if (!memcmp(buf, "echo", 4))
-        {
-            char *argument = buf + 5;
-            remove_newline(argument);
-            if (strlen(argument) > 0)
-            {
-                echo(argument);
-            }
-        }
+    }
+    else if (!memcmp(buf, "touch", 5))
+    {
+      char *argument = buf + 6;
+      remove_newline(argument);
+      if (strlen(argument) > 0)
+      {
+        touch(argument);
+      }
+    }
+    else if (!memcmp(buf, "echo", 4))
+    {
+      char *argument = buf + 5;
+      remove_newline(argument);
+      if (strlen(argument) > 0)
+      {
+        echo(argument);
+      }
+    }
     else if (!memcmp(buf, "cat", 3))
     {
       char *argument = buf + 4;
