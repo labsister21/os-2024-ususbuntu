@@ -45,7 +45,7 @@ void putchar(char c, uint32_t color) {
         framebuffer_state.cur_col = 0;
         framebuffer_state.cur_row++;
 
-        if (framebuffer_state.cur_col == MAX_ROW) scroll_up();
+        while (framebuffer_state.cur_row >= MAX_ROW) scroll_up();
     }
     else {
         framebuffer_state.cur_col++;
