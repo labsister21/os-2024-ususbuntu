@@ -13,7 +13,6 @@ struct FramebufferState framebuffer_state = {
 
 void framebuffer_set_cursor(uint8_t r, uint8_t c) {
     // TODO : Implement
-
     uint16_t pos = r * 80 + c;
     out(CURSOR_PORT_CMD, 0x0F);
     out(CURSOR_PORT_DATA, (uint8_t)(pos & 0xFF));
@@ -23,7 +22,6 @@ void framebuffer_set_cursor(uint8_t r, uint8_t c) {
 
 void framebuffer_write(uint8_t row, uint8_t col, char c, uint8_t fg, uint8_t bg) {
     // TODO : Implement
-
     uint16_t position = row * 80 + col;
     uint8_t color = (bg << 4) | (fg & 0x0F);
     FRAMEBUFFER_MEMORY_OFFSET[position * 2] = c;
@@ -43,7 +41,6 @@ void putchar(char c, uint32_t color) {
     if (c != '\n') {
         framebuffer_write(framebuffer_state.cur_row, framebuffer_state.cur_col, c, color, 0x00);
     }
-
     if (framebuffer_state.cur_col == 79 || c == '\n') {
         framebuffer_state.cur_col = 0;
         framebuffer_state.cur_row++;

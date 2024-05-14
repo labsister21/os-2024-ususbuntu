@@ -58,6 +58,11 @@ void get_user_input(char *buf)
     syscall(4, (uint32_t)buf, 0, 0);
 }
 
+// void putchar(char *buf)
+// {
+//     syscall(5, (uint32_t)buf, 0, 0);
+// }
+
 void puts(char *str, uint32_t len, uint32_t color)
 {
     syscall(6, (uint32_t)str, len, color);
@@ -231,27 +236,81 @@ void mkdir(char *argument)
     }
 }
 
-void touch(char *argument)
+void rm(char *argument)
 {
-    char ext[strlen(argument)];
-    split_by_first(argument, '.', ext);
-
-    uint8_t name_len = strlen(ext);
-    request.buffer_size = CLUSTER_SIZE;
+    uint8_t name_len = strlen(argument);
+    request.buffer_size = 0;
     request.buf = buf;
+
     while (name_len < 8)
     {
-        ext[name_len] = '\0';
+        argument[name_len] = '\0';
         name_len++;
     }
-    memcpy(request.ext, argument, strlen(argument));
+
+    memcpy(request.ext, "dir", 3);
     request.parent_cluster_number = cwd_cluster_number;
-    memcpy(request.name, ext, name_len);
+    memcpy(request.name, argument, name_len);
+    delete_syscall(request, &retcode);
+    if (retcode == 0)
+    {
+        puts("Success: Folder '", 17, 0xF);
+        puts(request.name, 8, 0xF);
+        puts("' is deleted.\n", 15, 0xF);
+    }
+    else if (retcode == 1)
+    {
+        puts("Cannot remove: Folder'", 22, 0xF);
+        puts(request.name, 8, 0xF);
+        puts("' is not found.\n", 17, 0xF);
+    }
+    else if (retcode == 2)
+    {
+        puts("Cannot remove: Folder'", 22, 0xF);
+        puts(request.name, 8, 0xF);
+        puts("' is not empty.\n", 17, 0xF);
+    }
+    else if (retcode == -1)
+    {
+        puts("Unknown error.\n", 15, 0xF);
+    }
+}
+
+void touch(char *argument)
+{
+    char filename[8];
+    split_by_first(argument, '.', filename);
+
+    request.buffer_size = CLUSTER_SIZE;
+    request.buf = buf;
+    if (strlen(filename) < 8)
+    {
+        filename[strlen(filename)] = '\0';
+    }
+    else
+    {
+        filename[8] = '\0';
+    }
+    if (strlen(argument) < 3)
+    {
+        argument[strlen(argument)] = '\0';
+    }
+    else
+    {
+        argument[3] = '\0';
+    }
+
+    memcpy(request.ext, argument, 3);
+    request.parent_cluster_number = cwd_cluster_number;
+    memcpy(request.name, filename, 8);
+
     read_syscall(request, &retcode);
     if (retcode == 0)
     {
         puts("File'", 7, 0xF);
         puts(request.name, 8, 0xF);
+        puts(".", 1, 0xF);
+        puts(request.ext, 3, 0xF);
         puts("' already exists.\n", 19, 0xF);
     }
     else if (retcode == 3)
@@ -265,8 +324,9 @@ void touch(char *argument)
         else
         {
             puts("File '", 8, 0xF);
-            puts(".", 1, 0xF);
             puts(request.name, 8, 0xF);
+            puts(".", 1, 0xF);
+            puts(request.ext, 3, 0xF);
             puts("' created.\n", 12, 0xF);
         }
     }
@@ -313,34 +373,44 @@ void remove_petik(char *str)
 void echo(char *argument)
 {
     remove_space(argument);
-    char file[strlen(argument)];
-    split_by_first(file, '>', argument);
     remove_petik(argument);
+    char text[strlen(argument)];
+    split_by_first(argument, '>', text);
 
-    uint8_t name_len = strlen(file);
     request.buffer_size = CLUSTER_SIZE;
-    while (name_len < 8)
-    {
-        file[name_len] = '\0';
-        name_len++;
-    }
-    int32_t length = strlen(argument);
-    while (length < 8)
-    {
-        argument[length] = '\0';
-        length++;
-    }
-    request.buf = argument;
+    text[strlen(text)] = '\0';
+
     request.parent_cluster_number = cwd_cluster_number;
-    char name[3];
-    split_by_first(file, '.', name);
-    memcpy(request.ext, file, strlen(file));
-    memcpy(request.name, name, strlen(name));
+    char name[8];
+    split_by_first(argument, '.', name);
+
+    if (strlen(argument) < 3)
+    {
+        argument[strlen(argument)] = '\0';
+    }
+    else
+    {
+        argument[8] = '\0';
+    }
+    if (strlen(name) < 3)
+    {
+        name[strlen(name)] = '\0';
+    }
+    else
+    {
+        name[8] = '\0';
+    }
+
+    request.buf = text;
+    memcpy(request.ext, argument, 3);
+    memcpy(request.name, name, 8);
+
     read_syscall(request, &retcode);
     if (retcode == 0)
     {
         delete_syscall(request, &retcode);
         write_syscall(request, &retcode);
+
         if (retcode != 0)
         {
             puts("Unknown error.\n", 15, 0xF);
@@ -348,8 +418,9 @@ void echo(char *argument)
         else
         {
             puts("File '", 8, 0xF);
-            puts(".", 1, 0xF);
             puts(request.name, 8, 0xF);
+            puts(".", 1, 0xF);
+            puts(request.ext, 3, 0xF);
             puts("' updated.\n", 12, 0xF);
         }
     }
@@ -403,6 +474,15 @@ int main(void)
                 mkdir(argument);
             }
         }
+        else if (!memcmp(buf, "rm", 2))
+        {
+            char *argument = buf + 3;
+            remove_newline(argument);
+            if (strlen(argument) > 0)
+            {
+                rm(argument);
+            }
+        }
         else if (!memcmp(buf, "touch", 5))
         {
             char *argument = buf + 6;
@@ -419,6 +499,19 @@ int main(void)
             if (strlen(argument) > 0)
             {
                 echo(argument);
+            }
+        }
+        else if (!memcmp(buf, "ls", 2))
+        {
+            request.buf = buf;
+            syscall(10, (uint32_t)request.buf, cwd_cluster_number, 0);
+            if (request.buf == 0)
+            {
+                puts("Directory Empty\n", 16, 0x4);
+            }
+            else
+            {
+                puts(request.buf, strlen(request.buf), 0xF);
             }
         }
 
