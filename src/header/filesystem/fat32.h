@@ -258,5 +258,7 @@ void list_dir_content(char* buffer, uint32_t directory_cluster_number);
 /*
 Get filesystem content
 */
-void all_list_dir_content(char* buffer, uint32_t dir_cluster_number);
+void print(char * buffer, uint32_t dir_cluster_number);
+
+void all_list_dir_content(char* buffer, uint32_t dir_cluster_number, int* dir_idx, int* level);
 #endif

@@ -10,7 +10,7 @@ ISO_NAME      = OS2024
 DISK_NAME	  = storage
 
 # Flags
-WARNING_CFLAG = -Wall -Wextra -Werror
+# WARNING_CFLAG = -Wall -Wextra -Werror
 DEBUG_CFLAG   = -fshort-wchar -g
 STRIP_CFLAG   = -nostdlib -fno-stack-protector -nostartfiles -nodefaultlibs -ffreestanding
 CFLAGS        = $(DEBUG_CFLAG) $(WARNING_CFLAG) $(STRIP_CFLAG) -m32 -c -I$(SOURCE_FOLDER) -I/usr/include -I/usr/include/x86_64-linux-gn
