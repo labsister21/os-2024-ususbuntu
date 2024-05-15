@@ -261,4 +261,8 @@ Get filesystem content
 void print(char * buffer, uint32_t dir_cluster_number);
 
 void all_list_dir_content(char* buffer, uint32_t dir_cluster_number, int* dir_idx, int* level);
+
+void print_path_to_dir(char* buffer, uint32_t dir_cluster_number, const char* target_dir_name);
+
+void find_and_print_path(char* buffer, uint32_t dir_cluster_number, const char* target_dir_name, int* dir_idx, int* level, bool* found);
 #endif

@@ -101,6 +101,9 @@ void syscall(struct InterruptFrame frame)
   case (11):
     print((char *)frame.cpu.general.ebx, frame.cpu.general.ecx);
     break;
+  case (12):
+    print_path_to_dir((char *)frame.cpu.general.ebx, frame.cpu.general.ecx, (char *)frame.cpu.general.edx);
+    break;
   }
 }
 

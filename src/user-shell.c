@@ -335,38 +335,49 @@ void find(char* argument)
   request.parent_cluster_number = cwd_cluster_number;
 
   // Read the directory
-  read_dir_syscall(request, &retcode);
+  char directories[255];
+  directories[0] = '\0';
+  syscall(12, (uint32_t)directories, cwd_cluster_number, (uint32_t)argument);
 
-  if (retcode == 0)
+  if (directories[0] == '\0')
   {
-    // Directory found, iterate over its contents
-    int32_t idx = 0;
-    char path[255];
-    memcpy(path, "shell\\", 6);
-    int pathlen = 6;
+    puts("Directory Empty\n", 16, 0x4);
+  }
+  else
+  {
+    puts(directories, strlen(directories), 0xF);
+  }
 
-    while (idx < strlen(request.name) && idx < 8)
-    {
-      path[pathlen] = request.name[idx];
-      pathlen++;
-      idx++;
-    }
-    path[pathlen] = '\\';
-    pathlen++;
+  // if (retcode == 0)
+  // {
+  //   // Directory found, iterate over its contents
+  //   int32_t idx = 0;
+  //   char path[255];
+  //   memcpy(path, "shell\\", 6);
+  //   int pathlen = 6;
 
-    // Print the directory path
-    puts(path, pathlen, 0xF);
-    puts("\n", 1, 0xF);
-  }
-  else if (retcode == 2)
-  {
-    puts("Directory not found.\n", 21, 0xF);
-  }
-  else if (retcode == 1)
-  {
-    puts("File process TBA!\n", 18, 0xF);
-    // Not a directory, possibly a file
-  }
+  //   while (idx < strlen(request.name) && idx < 8)
+  //   {
+  //     path[pathlen] = request.name[idx];
+  //     pathlen++;
+  //     idx++;
+  //   }
+  //   path[pathlen] = '\\';
+  //   pathlen++;
+
+  //   // Print the directory path
+  //   puts(path, pathlen, 0xF);
+  //   puts("\n", 1, 0xF);
+  // }
+  // else if (retcode == 2)
+  // {
+  //   puts("Directory not found.\n", 21, 0xF);
+  // }
+  // else if (retcode == 1)
+  // {
+  //   puts("File process TBA!\n", 18, 0xF);
+  //   // Not a directory, possibly a file
+  // }
 }
 
 // argument semua teks setelah cp
@@ -713,26 +724,17 @@ int main(void)
         rm(argument);
       }
     }
-    else if (!memcmp(buf, "print", 5))
+    else if (!memcmp(buf, "find", 4))
     {
         char directories[255];
         memset(directories, '\0', sizeof(directories));
-        syscall(11, (uint32_t) directories, cwd_cluster_number, 0);
-        puts(directories, strlen(directories), 0xF);
-        // if (directories[0] == '\0') {
-        //     puts("Directory Empty\n", 16, 0x4);
-        // } else {
-        //     puts(directories, strlen(directories), 0xF);
-        // }
-    }
-    else if (!memcmp(buf, "find", 4))
-    {
-      char* argument = buf + 5;
-      remove_newline(argument);
-      if (strlen(argument) > 0)
-      {
-        find(argument);
-      }
+
+        char* argument = buf + 5;
+        remove_newline(argument);
+        if (strlen(argument) > 0)
+        { 
+          find(argument);
+        }
     }
     // else if (!memcmp(buf, "cp", 2))
     // {

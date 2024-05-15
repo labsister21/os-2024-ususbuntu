@@ -435,7 +435,7 @@ void list_dir_content(char* buffer, uint32_t dir_cluster_number) {
     }
 }
 
-void print(char * buffer, uint32_t dir_cluster_number){
+void print(char* buffer, uint32_t dir_cluster_number){
    int dir_idx = 0;
    int level = 0;
 
@@ -500,6 +500,118 @@ void all_list_dir_content(char* buffer, uint32_t dir_cluster_number, int* dir_id
             }else{
                 buffer[(*dir_idx)] = '\n';
                 (*dir_idx)++;
+            }
+        }
+    }
+}
+
+
+// Custom strncpy function
+void custom_strncpy(char *dest, const char *src, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        if (i < n) {
+            dest[i] = src[i];
+        }
+        if (src[i] == '\0') {
+            break;
+        }
+    }
+    if (n > 0) {
+        dest[n - 1] = '\0';
+    }
+}
+
+// Custom strcmp function
+int custom_strcmp(const char *s1, const char *s2) {
+    while (*s1 && (*s1 == *s2)) {
+        s1++;
+        s2++;
+    }
+    return *(unsigned char *)s1 - *(unsigned char *)s2;
+}
+
+void print_path_to_dir(char* buffer, uint32_t dir_cluster_number, const char* target_dir_name) {
+    int dir_idx = 0;
+    int level = 0;
+    bool found = false;
+    find_and_print_path(buffer, dir_cluster_number, target_dir_name, &dir_idx, &level, &found);
+}
+
+void find_and_print_path(char* buffer, uint32_t dir_cluster_number, const char* target_dir_name, int* dir_idx, int* level, bool* found) {
+    // Read the directory table from the given cluster number
+    struct FAT32DirectoryTable dirtable;
+    read_clusters(&dirtable, dir_cluster_number, 1);
+
+    // Calculate the number of entries in the directory table
+    int dir_length = sizeof(dirtable.table) / sizeof(dirtable.table[0]);
+
+    // Iterate over each entry in the directory table
+    for (int i = 0; i < dir_length; i++) {
+        if (*found) return; // Stop searching if we've found the directory
+
+        // Get the current directory entry
+        struct FAT32DirectoryEntry current_content = dirtable.table[i];
+
+        // Check if the name and extension are null (empty entry)
+        bool is_current_content_name_na = memcmp(current_content.name, "\0\0\0\0\0\0\0\0", 8) == 0;
+        bool is_current_content_ext_na = memcmp(current_content.ext, "\0\0\0", 3) == 0;
+
+        // Skip the entry if it's empty
+        if (is_current_content_name_na && is_current_content_ext_na) {
+            continue;
+        }
+
+        // Prepare the name for comparison
+        char name[9];
+        custom_strncpy(name, current_content.name, 8);
+        name[8] = '\0';
+
+        // Compare with the target directory name
+        if (memcmp(current_content.ext, "dir", 3) == 0 && custom_strcmp(name, target_dir_name) == 0) {
+            // If it's the target directory, print the path and stop
+            for (int j = 0; j < *level; j++) {
+                buffer[(*dir_idx)++] = ' ';
+                buffer[(*dir_idx)++] = ' ';
+                buffer[(*dir_idx)++] = ' ';
+            }
+            for (int j = 0; j < 8; j++) {
+                if (current_content.name[j] == '\0') break;
+                buffer[(*dir_idx)++] = current_content.name[j];
+            }
+            buffer[(*dir_idx)++] = '/';
+            buffer[(*dir_idx)++] = '\n';
+            *found = true;
+            return;
+        } else if (memcmp(current_content.ext, "dir", 3) == 0) {
+            // If it's a directory, add its name to the path and search recursively
+            for (int j = 0; j < *level; j++) {
+                buffer[(*dir_idx)++] = ' ';
+                buffer[(*dir_idx)++] = ' ';
+                buffer[(*dir_idx)++] = ' ';
+            }
+            for (int j = 0; j < 8; j++) {
+                if (current_content.name[j] == '\0') break;
+                buffer[(*dir_idx)++] = current_content.name[j];
+            }
+            buffer[(*dir_idx)++] = '/';
+            buffer[(*dir_idx)++] = '\n';
+
+            // Recursively search the subdirectory
+            uint32_t sub_dir_cluster_number = current_content.cluster_low | (current_content.cluster_high << 16);
+            (*level)++;
+            find_and_print_path(buffer, sub_dir_cluster_number, target_dir_name, dir_idx, level, found);
+            (*level)--;
+
+            if (!*found) {
+                // Remove first \n
+                (*dir_idx)--;
+                buffer[(*dir_idx)] = '\0';
+
+                // If not found, remove the directory name from the path
+                while (*dir_idx > 0 && buffer[*dir_idx - 1] != '\n') {
+                    (*dir_idx)--;
+                    buffer[(*dir_idx)] = '\0';
+                }
             }
         }
     }
