@@ -201,31 +201,22 @@ void cd(char *argument)
 
 void cp(char *argument)
 {
-
+  // Initiate source file
   char source[12];
   char source_name[8];
   char source_ext[3];
 
+  // getting the source file name and extension
   split_by_first(argument, ' ', source);
   split_by_first(source, '.', source_name);
 
   memcpy(source_ext, source, strlen(source));
-  // Debug
-  puts("Argument content: ", 19, 0xF);
-  puts(argument, strlen(argument), 0xF);
-  puts("\n", 1, 0xF);
 
+  // getting the destination path
   char dest[strlen(argument)];
   memcpy(dest, argument, strlen(argument));
-  puts("Dest content: ", 19, 0xF);
-  puts(dest, strlen(dest), 0xF);
-  puts("\n", 1, 0xF);
 
-  // Debug
-  puts("Source Name: ", 14, 0xF);
-  puts(source_name, strlen(source_name), 0xF);
-  puts("\n", 1, 0xF);
-
+  // random bullshit go
   request.buffer_size = CLUSTER_SIZE;
   request.buf = buf;
 
@@ -244,29 +235,25 @@ void cp(char *argument)
     ext_len++;
   }
 
-  puts("Source Name: ", 14, 0xF);
-  puts(source_name, strlen(source_name), 0xF);
-  puts("\n", 1, 0xF);
-
+  // create request to read source file
   memcpy(request.ext, source_ext, 3);
   request.parent_cluster_number = cwd_cluster_number;
   memcpy(request.name, source_name, 8);
 
+  // read source file
   read_syscall(request, &retcode);
 
   // copy the source content
   char source_content[strlen(request.buf)];
   memcpy(source_content, request.buf, strlen(request.buf));
 
+  // Source file found, check destination, arguments holds the path
   if (retcode == 0)
   {
-    puts("Argument content: ", 19, 0xF);
-    puts(dest, strlen(dest), 0xF);
-    puts("\n", 1, 0xF);
-    // Source file found, check destination, arguments holds the path
     if (is_include(dest, '.'))
     {
-      puts("Destination is a file\n", 23, 0x4);
+      // puts("Destination is a file\n", 23, 0x4);
+      // Initiate target file
       char target[12];
       char target_name[8];
       char target_ext[3];
@@ -289,7 +276,7 @@ void cp(char *argument)
         target_ext_len++;
       }
 
-      // implement copying file
+      // paste the source file
       memcpy(request.buf, source_content, strlen(source_content));
       memcpy(request.ext, target_ext, 3);
       memcpy(request.name, target_name, 8);
@@ -298,7 +285,7 @@ void cp(char *argument)
     }
     else
     {
-      puts("Destination is a directory\n", 28, 0x4);
+      // puts("Destination is a directory\n", 28, 0x4);
       // saving current directory state
       uint32_t cd_count = 0;
       while (true)
@@ -329,8 +316,8 @@ void cp(char *argument)
       request.parent_cluster_number = cwd_cluster_number;
       write_syscall(request, &retcode);
 
-      puts("Copying file\n", 14, 0xF);
-      puts("\n", 1, 0xF);
+      // puts("Copying file\n", 14, 0xF);
+      // puts("\n", 1, 0xF);
 
       for (uint32_t i = 0; i < cd_count; i++)
       {
