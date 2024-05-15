@@ -497,6 +497,17 @@ void all_list_dir_content(char* buffer, uint32_t dir_cluster_number, int* dir_id
                 (*level)++;
                 all_list_dir_content(buffer, sub_dir_cluster_number, dir_idx, level);
                 (*level)--;
+            }else if(memcmp(current_content.ext, "dir", 3) == 1){
+                buffer[(*dir_idx)] = '.';
+                (*dir_idx)++;
+                buffer[(*dir_idx)] = current_content.ext[0];
+                (*dir_idx)++;
+                buffer[(*dir_idx)] = current_content.ext[1];
+                (*dir_idx)++;
+                buffer[(*dir_idx)] = current_content.ext[2];
+                (*dir_idx)++;
+                buffer[(*dir_idx)] = '\n';
+                (*dir_idx)++;
             }else{
                 buffer[(*dir_idx)] = '\n';
                 (*dir_idx)++;
@@ -530,10 +541,18 @@ int custom_strcmp(const char *s1, const char *s2) {
     return *(unsigned char *)s1 - *(unsigned char *)s2;
 }
 
+void clear_buffer(char* buffer, size_t size) {
+    for (size_t i = 0; i < size; i++) {
+        buffer[i] = '\0';
+    }
+}
+
 void print_path_to_dir(char* buffer, uint32_t dir_cluster_number, const char* target_dir_name) {
     int dir_idx = 0;
     int level = 0;
     bool found = false;
+
+    clear_buffer(buffer, (size_t)255);
     find_and_print_path(buffer, dir_cluster_number, target_dir_name, &dir_idx, &level, &found);
 }
 
@@ -570,31 +589,50 @@ void find_and_print_path(char* buffer, uint32_t dir_cluster_number, const char* 
         if (memcmp(current_content.ext, "dir", 3) == 0 && custom_strcmp(name, target_dir_name) == 0) {
             // If it's the target directory, print the path and stop
             for (int j = 0; j < *level; j++) {
-                buffer[(*dir_idx)++] = ' ';
-                buffer[(*dir_idx)++] = ' ';
-                buffer[(*dir_idx)++] = ' ';
+                buffer[(*dir_idx)] = ' ';
+                (*dir_idx)++;
+
+                buffer[(*dir_idx)] = ' ';
+                (*dir_idx)++;
+
+                buffer[(*dir_idx)] = ' ';
+                (*dir_idx)++;
             }
             for (int j = 0; j < 8; j++) {
                 if (current_content.name[j] == '\0') break;
-                buffer[(*dir_idx)++] = current_content.name[j];
+                buffer[(*dir_idx)] = current_content.name[j];
+                (*dir_idx)++;
             }
-            buffer[(*dir_idx)++] = '/';
-            buffer[(*dir_idx)++] = '\n';
+            buffer[(*dir_idx)] = '/';
+            (*dir_idx)++;
+
+            buffer[(*dir_idx)] = '\n';
+            (*dir_idx)++;
+
             *found = true;
             return;
         } else if (memcmp(current_content.ext, "dir", 3) == 0) {
             // If it's a directory, add its name to the path and search recursively
             for (int j = 0; j < *level; j++) {
-                buffer[(*dir_idx)++] = ' ';
-                buffer[(*dir_idx)++] = ' ';
-                buffer[(*dir_idx)++] = ' ';
+                buffer[(*dir_idx)] = ' ';
+                (*dir_idx)++;
+
+                buffer[(*dir_idx)] = ' ';
+                (*dir_idx)++;
+
+                buffer[(*dir_idx)] = ' ';
+                (*dir_idx)++;
             }
             for (int j = 0; j < 8; j++) {
                 if (current_content.name[j] == '\0') break;
-                buffer[(*dir_idx)++] = current_content.name[j];
+                buffer[(*dir_idx)] = current_content.name[j];
+                (*dir_idx)++;
             }
-            buffer[(*dir_idx)++] = '/';
-            buffer[(*dir_idx)++] = '\n';
+            buffer[(*dir_idx)] = '/';
+            (*dir_idx)++;
+
+            buffer[(*dir_idx)] = '\n';
+            (*dir_idx)++;
 
             // Recursively search the subdirectory
             uint32_t sub_dir_cluster_number = current_content.cluster_low | (current_content.cluster_high << 16);
@@ -612,6 +650,37 @@ void find_and_print_path(char* buffer, uint32_t dir_cluster_number, const char* 
                     (*dir_idx)--;
                     buffer[(*dir_idx)] = '\0';
                 }
+            }
+        } else if (memcmp(current_content.ext, "dir", 3) == 1){
+            if(custom_strcmp(name, target_dir_name) == 0){
+                for (int j = 0; j < *level; j++) {
+                    buffer[(*dir_idx)] = ' ';
+                    (*dir_idx)++;
+
+                    buffer[(*dir_idx)] = ' ';
+                    (*dir_idx)++;
+
+                    buffer[(*dir_idx)] = ' ';
+                    (*dir_idx)++;
+                }
+                for (int j = 0; j < 8; j++) {
+                    if (current_content.name[j] == '\0') break;
+                    buffer[(*dir_idx)] = current_content.name[j];
+                    (*dir_idx)++;
+                }
+                buffer[(*dir_idx)] = '.';
+                (*dir_idx)++;
+                buffer[(*dir_idx)] = current_content.ext[0];
+                (*dir_idx)++;
+                buffer[(*dir_idx)] = current_content.ext[1];
+                (*dir_idx)++;
+                buffer[(*dir_idx)] = current_content.ext[2];
+                (*dir_idx)++;
+                buffer[(*dir_idx)] = '\n';
+                (*dir_idx)++;
+
+                *found = true;
+                return;
             }
         }
     }
