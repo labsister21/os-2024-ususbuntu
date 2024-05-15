@@ -17,7 +17,8 @@
     "framebuffer.h": "c",
     "stdbool.h": "c",
     "keyboard.h": "c",
-    "command.h": "c"
+    "command.h": "c",
+    "process.h": "c"
   },
   "C_Cpp_Runner.msvcBatchPath": "",
   "C_Cpp_Runner.cCompilerPath": "gcc",
