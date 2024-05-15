@@ -564,9 +564,11 @@ void find_and_print_path(char* buffer, uint32_t dir_cluster_number, const char* 
     // Calculate the number of entries in the directory table
     int dir_length = sizeof(dirtable.table) / sizeof(dirtable.table[0]);
 
+    *found = false;
+    bool found_lokal = false;
     // Iterate over each entry in the directory table
     for (int i = 0; i < dir_length; i++) {
-        if (*found) return; // Stop searching if we've found the directory
+        //if (*found) return; // Stop searching if we've found the directory
 
         // Get the current directory entry
         struct FAT32DirectoryEntry current_content = dirtable.table[i];
@@ -610,7 +612,6 @@ void find_and_print_path(char* buffer, uint32_t dir_cluster_number, const char* 
             (*dir_idx)++;
 
             *found = true;
-            return;
         } else if (memcmp(current_content.ext, "dir", 3) == 0) {
             // If it's a directory, add its name to the path and search recursively
             for (int j = 0; j < *level; j++) {
@@ -637,7 +638,14 @@ void find_and_print_path(char* buffer, uint32_t dir_cluster_number, const char* 
             // Recursively search the subdirectory
             uint32_t sub_dir_cluster_number = current_content.cluster_low | (current_content.cluster_high << 16);
             (*level)++;
+            
+            //handling for case if directories that doesn't contain the searched file/directory is located after the directory where file/directory is found
+            //resulting in deletion of path even though the file/directory is found
+            if(*found){
+                found_lokal = true;
+            }
             find_and_print_path(buffer, sub_dir_cluster_number, target_dir_name, dir_idx, level, found);
+            
             (*level)--;
 
             if (!*found) {
@@ -680,9 +688,12 @@ void find_and_print_path(char* buffer, uint32_t dir_cluster_number, const char* 
                 (*dir_idx)++;
 
                 *found = true;
-                return;
             }
         }
+    }
+
+    if(found_lokal){
+        *found = true;
     }
 }
 
