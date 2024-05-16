@@ -95,11 +95,11 @@ struct ProcessControlBlock {
 
 extern struct ProcessControlBlock _process_list[PROCESS_COUNT_MAX];
 
-static struct {
+struct ProcessManagerState {
     uint32_t active_process_count;
-} process_manager_state = {
-    .active_process_count = 0,
 };
+
+extern struct ProcessManagerState process_manager_state;
 
 
 /**

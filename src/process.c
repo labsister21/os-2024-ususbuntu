@@ -5,9 +5,12 @@
 
 struct ProcessControlBlock _process_list[PROCESS_COUNT_MAX] = { 0 };
 
+struct ProcessManagerState process_manager_state = {
+    .active_process_count = 0,
+};
+
 struct ProcessControlBlock* process_get_current_running_pcb_pointer(void) {
     return process_manager_state.active_process_count > 0 ? &(_process_list[process_manager_state.active_process_count - 1]) : NULL;
-
 }
 
 int32_t process_generate_new_pid(void) {
