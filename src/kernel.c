@@ -42,12 +42,9 @@ void kernel_setup(void)
 
   // Set TSS $esp pointer and jump into shell
   set_tss_kernel_current_stack();
-  kernel_execute_user_program((uint8_t*)0);
-
-  while (true);
 
   // Create & execute process 0
-    // process_create_user_process(request);
-    // paging_use_page_directory(_process_list[0].context.page_directory_virtual_addr);
-    // kernel_execute_user_program((void*) 0x0);
+  int32_t tes = process_create_user_process(request);
+  paging_use_page_directory(_process_list[0].context.page_directory_virtual_addr);
+  kernel_execute_user_program((void*)0x0);
 }
