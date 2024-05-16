@@ -95,14 +95,17 @@ void syscall(struct InterruptFrame frame)
       *(struct FAT32DriverRequest*)frame.cpu.general.ebx);
     break;
   case 4:
-    keyboard_state_activate();
-    __asm__("sti");
-    while (is_keyboard_blocking())
-      ;
+    // keyboard_state_activate();
+    // __asm__("sti");
+    // while (is_keyboard_blocking())
+    //   ;
 
-    char buffer[KEYBOARD_BUFFER_SIZE];
-    get_keyboard_buffer(buffer);
-    memcpy((char*)frame.cpu.general.ebx, buffer, KEYBOARD_BUFFER_SIZE);
+    // char buffer[KEYBOARD_BUFFER_SIZE];
+    // char buffer;
+    // get_keyboard_buffer(&buffer);
+    // memcpy((char*)frame.cpu.general.ebx, buffer, KEYBOARD_BUFFER_SIZE);
+    // *((char*)frame.cpu.general.ebx) = buffer;
+    get_keyboard_buffer((char*)frame.cpu.general.ebx);
     break;
   case 5:
     putchar((char)frame.cpu.general.ebx, frame.cpu.general.ecx);

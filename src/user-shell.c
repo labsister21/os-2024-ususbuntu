@@ -3,7 +3,7 @@
 #include "header/command.h"
 #include "header/stdlib/string.h"
 
-struct ClusterBuffer cl[2] = {0};
+struct ClusterBuffer cl[2] = { 0 };
 struct FAT32DriverRequest request = {
     .buf = &cl,
     .name = "shell",
@@ -17,6 +17,10 @@ int32_t retcode;
 char current_dir[255] = "/";
 // buffer to store user input
 char buf[256];
+
+char cur_char;
+
+bool is_entered = false;
 // current directory length to keep track of the current directory length
 uint8_t currentdirlen = 1;
 // current working directory cluster number
@@ -33,27 +37,27 @@ void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx)
   __asm__ volatile("int $0x30");
 }
 
-void read_syscall(struct FAT32DriverRequest request, int32_t *retcode)
+void read_syscall(struct FAT32DriverRequest request, int32_t* retcode)
 {
   syscall(0, (uint32_t)&request, (uint32_t)retcode, 0);
 }
 
-void read_dir_syscall(struct FAT32DriverRequest request, int32_t *retcode)
+void read_dir_syscall(struct FAT32DriverRequest request, int32_t* retcode)
 {
   syscall(1, (uint32_t)&request, (uint32_t)retcode, 0);
 }
 
-void write_syscall(struct FAT32DriverRequest request, int32_t *retcode)
+void write_syscall(struct FAT32DriverRequest request, int32_t* retcode)
 {
   syscall(2, (uint32_t)&request, (uint32_t)retcode, 0);
 }
 
-void delete_syscall(struct FAT32DriverRequest request, int32_t *retcode)
+void delete_syscall(struct FAT32DriverRequest request, int32_t* retcode)
 {
   syscall(3, (uint32_t)&request, (uint32_t)retcode, 0);
 }
 
-void get_user_input(char *buf)
+void get_user_input(char* buf)
 {
   syscall(4, (uint32_t)buf, 0, 0);
 }
@@ -63,7 +67,7 @@ void putchar(char buf, uint32_t color)
   syscall(5, (uint32_t)buf, color, 0);
 }
 
-void puts(char *str, uint32_t len, uint32_t color)
+void puts(char* str, uint32_t len, uint32_t color)
 {
   syscall(6, (uint32_t)str, len, color);
 }
@@ -73,25 +77,25 @@ void activate_keyboard(void)
   syscall(7, 0, 0, 0);
 }
 
-void move_child_dir(struct FAT32DriverRequest request, int32_t *retcode)
+void move_child_dir(struct FAT32DriverRequest request, int32_t* retcode)
 {
   syscall(8, (uint32_t)&request, (uint32_t)retcode, 0);
 }
 
-void move_parent_dir(struct FAT32DriverRequest request, int32_t *retcode)
+void move_parent_dir(struct FAT32DriverRequest request, int32_t* retcode)
 {
   syscall(9, (uint32_t)&request, (uint32_t)retcode, 0);
 }
 
-void command(char *buf, char *current_dir)
+void command(char* current_dir)
 {
   puts("UsusBuntu@OS-IF2230:", 21, 0xA);
   puts(current_dir, 255, 0x9);
   puts("$ ", 3, 0xF);
-  get_user_input(buf);
+  // get_user_input(buf);
 }
 
-void remove_newline(char *str)
+void remove_newline(char* str)
 {
   int len = strlen(str);
   for (int i = 0; i < len; i++)
@@ -104,7 +108,7 @@ void remove_newline(char *str)
   }
 }
 
-void split_by_first(char *pstr, char by, char *result)
+void split_by_first(char* pstr, char by, char* result)
 {
   int i = 0;
   while (pstr[i] != '\0' && pstr[i] != by)
@@ -132,7 +136,7 @@ void split_by_first(char *pstr, char by, char *result)
   }
 }
 
-int32_t is_include(char *str, char target)
+int32_t is_include(char* str, char target)
 {
   while (*str != '\0')
   {
@@ -145,7 +149,7 @@ int32_t is_include(char *str, char target)
   return 0;
 }
 
-void cd(char *argument)
+void cd(char* argument)
 {
   if (memcmp("..", argument, 2) == 0 && strlen(argument) == 2)
   {
@@ -199,7 +203,7 @@ void cd(char *argument)
   }
 }
 
-void cp(char *argument)
+void cp(char* argument)
 {
   // Initiate source file
   char source[12];
@@ -339,7 +343,7 @@ void cp(char *argument)
   }
 }
 
-void mkdir(char *argument)
+void mkdir(char* argument)
 {
   uint8_t name_len = strlen(argument);
   request.buffer_size = 0;
@@ -376,7 +380,7 @@ void mkdir(char *argument)
   }
 }
 
-void cat(char *argument)
+void cat(char* argument)
 {
   char filename[strlen(argument)];
   split_by_first(argument, '.', filename);
@@ -416,7 +420,7 @@ void cat(char *argument)
   }
 }
 
-void rm(char *argument)
+void rm(char* argument)
 {
   uint8_t name_len = strlen(argument);
   request.buffer_size = 0;
@@ -456,7 +460,7 @@ void rm(char *argument)
   }
 }
 
-void find(char *argument)
+void find(char* argument)
 {
   uint8_t name_len = strlen(argument);
   request.buffer_size = CLUSTER_SIZE;
@@ -603,7 +607,7 @@ void find(char *argument)
 //   rm(temp);
 // }
 
-void touch(char *argument)
+void touch(char* argument)
 {
   char filename[8];
   split_by_first(argument, '.', filename);
@@ -659,7 +663,7 @@ void touch(char *argument)
   }
 }
 
-void remove_space(char *str)
+void remove_space(char* str)
 {
   int32_t len = strlen(str);
   int32_t shift = 0;
@@ -678,7 +682,7 @@ void remove_space(char *str)
   str[len - shift] = '\0';
 }
 
-void remove_petik(char *str)
+void remove_petik(char* str)
 {
   int32_t len = strlen(str);
   int32_t shift = 0;
@@ -697,7 +701,7 @@ void remove_petik(char *str)
   str[len - shift] = '\0';
 }
 
-void echo(char *argument)
+void echo(char* argument)
 {
   remove_space(argument);
   remove_petik(argument);
@@ -769,13 +773,35 @@ int main(void)
 {
   buf[255] = '\0';
   read_syscall(request, &retcode);
+  command(current_dir);
+  activate_keyboard();
   do
   {
-    activate_keyboard();
-    command(buf, current_dir);
+    get_user_input(&cur_char);
+
+    if (memcmp(&cur_char, "\n", 1) == 0 && !is_entered)
+    {
+      command(current_dir);
+      memcpy(buf, "", 1);
+      memcpy(&cur_char, "", 1);
+      is_entered = true;
+    }
+    else if (memcmp(&cur_char, "\b", 1) == 0)
+    {
+      if (strlen(buf) > 0)
+      {
+        buf[strlen(buf) - 1] = '\0';
+      }
+    }
+    else
+    {
+      buf[strlen(buf)] = cur_char;
+    }
+
+
     if (!memcmp(buf, "cd", 2))
     {
-      char *argument = buf + 3;
+      char* argument = buf + 3;
       remove_newline(argument);
       while (true)
       {
@@ -791,6 +817,8 @@ int main(void)
           break;
         }
       }
+
+      memcpy(buf, "", 1);
     }
     else if (!memcmp(buf, "ls", 2))
     {
@@ -804,6 +832,8 @@ int main(void)
       {
         puts(buf, strlen(buf), 0xF);
       }
+
+      memcpy(buf, "", 1);
     }
     else if (!memcmp(buf, "print", 5))
     {
@@ -818,72 +848,88 @@ int main(void)
       {
         puts(directories, strlen(directories), 0xF);
       }
+
+      memcpy(buf, "", 1);
     }
     else if (!memcmp(buf, "mkdir", 5))
     {
-      char *argument = buf + 6;
+      char* argument = buf + 6;
       remove_newline(argument);
       if (strlen(argument) > 0)
       {
         mkdir(argument);
       }
+
+      memcpy(buf, "", 1);
     }
     else if (!memcmp(buf, "touch", 5))
     {
-      char *argument = buf + 6;
+      char* argument = buf + 6;
       remove_newline(argument);
       if (strlen(argument) > 0)
       {
         touch(argument);
       }
+
+      memcpy(buf, "", 1);
     }
     else if (!memcmp(buf, "echo", 4))
     {
-      char *argument = buf + 5;
+      char* argument = buf + 5;
       remove_newline(argument);
       if (strlen(argument) > 0)
       {
         echo(argument);
       }
+
+      memcpy(buf, "", 1);
     }
     else if (!memcmp(buf, "cat", 3))
     {
-      char *argument = buf + 4;
+      char* argument = buf + 4;
       remove_newline(argument);
       if (strlen(argument) > 0)
       {
         cat(argument);
       }
+
+      memcpy(buf, "", 1);
     }
     else if (!memcmp(buf, "rm", 2))
     {
-      char *argument = buf + 3;
+      char* argument = buf + 3;
       remove_newline(argument);
       if (strlen(argument) > 0)
       {
         rm(argument);
       }
+
+      memcpy(buf, "", 1);
     }
     else if (!memcmp(buf, "find", 4))
     {
       char directories[255];
       memset(directories, '\0', sizeof(directories));
 
-      char *argument = buf + 5;
+      char* argument = buf + 5;
       remove_newline(argument);
       if (strlen(argument) > 0)
       {
         find(argument);
       }
+
+      memcpy(buf, "", 1);
     }
     else if (!memcmp(buf, "cp", 2))
     {
-      char *argument = buf + 3;
+      char* argument = buf + 3;
       remove_newline(argument);
       if (strlen(argument) > 0)
       {
         cp(argument);
       }
+
+      memcpy(buf, "", 1);
     }
     // else if (!memcmp(buf, "mv", 2))
     // {
@@ -898,10 +944,10 @@ int main(void)
     {
       break;
     }
-    else
-    {
-      puts("Command not found.\n", 20, 0x4);
-    }
+    // else
+    // {
+    //   puts("Command not found.\n", 20, 0x4);
+    // }
   } while (true);
 
   return 0;

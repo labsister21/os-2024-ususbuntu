@@ -40,7 +40,8 @@ struct KeyboardDriverState
     bool shift_on;
     bool ctrl_on;
     uint8_t buffer_index;
-    char keyboard_buffer[KEYBOARD_BUFFER_SIZE];
+    // char keyboard_buffer[KEYBOARD_BUFFER_SIZE];
+    char keyboard_buffer;
 } __attribute((packed));
 
 
