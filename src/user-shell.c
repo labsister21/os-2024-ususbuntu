@@ -199,6 +199,128 @@ void cd(char *argument)
   }
 }
 
+void cpfolder(char *argument)
+{
+  char source[8];
+
+  split_by_first(argument, ' ', source); // isi source nama folder doang
+  uint8_t source_len = strlen(source);
+
+  while (source_len < 8)
+  {
+    source[source_len] = '\0';
+    source_len++;
+  }
+
+  memcpy(request.name, source, source_len);
+  memcpy(request.ext, "dir", 3);
+  request.parent_cluster_number = cwd_cluster_number;
+
+  if (retcode == 3)
+  {
+    puts("Folder not found.\n", 19, 0xF);
+  }
+
+  // Kondisi folder ketemu
+  else if (retcode == 0)
+  {
+    // Baca path directory
+  }
+}
+
+// void folder_copier(uint32_t source_directory_cluster_number, uint32_t target_directory_cluster_number)
+// {
+//   char *temp_name;
+//   char *temp_ext;
+//   // Read the directory table from the given cluster number
+//   struct FAT32DirectoryTable dirtable;
+//   read_clusters(&dirtable, source_directory_cluster_number, 1);
+
+//   // Calculate the number of entries in the directory table
+//   int dir_length = sizeof(dirtable.table) / sizeof(dirtable.table[0]);
+//   for (int i = 0; i < dir_length; i++)
+//   {
+//     // Get the current directory entry
+//     struct FAT32DirectoryEntry current_content = dirtable.table[i];
+
+//     // Check if the name and extension are null (empty entry)
+//     bool is_current_content_name_na = memcmp(current_content.name, "\0\0\0\0\0\0\0\0", 8) == 0;
+//     bool is_current_content_ext_na = memcmp(current_content.ext, "\0\0\0", 3) == 0;
+
+//     // Skip the entry if it's empty
+//     if (is_current_content_name_na && is_current_content_ext_na)
+//     {
+//       continue;
+//     }
+//   }
+// }
+
+// setelah manggil ini, pastiin requetsnya di set ulang
+void reader_with_clust(uint32_t dir_cluster_number, char *name, char *ext)
+{
+  // idk, for safety i guess
+  uint32_t len_name = strlen(name);
+  while (len_name < 8)
+  {
+    name[len_name] = '\0';
+    len_name++;
+  }
+  uint32_t len_ext = strlen(ext);
+  while (len_ext < 3)
+  {
+    ext[len_ext] = '\0';
+    len_ext++;
+  }
+  request.buffer_size = CLUSTER_SIZE;
+  request.parent_cluster_number = dir_cluster_number;
+  memcpy(request.name, name, 8);
+  memcpy(request.ext, ext, 3);
+  read_syscall(request, &retcode);
+
+  if (retcode == 0)
+  {
+    puts("Finish reading with reader\n", 28, 0xF);
+  }
+  else
+  {
+    puts("Failed to read with reader\n", 28, 0x4);
+  }
+}
+
+void writer_with_clust(uint32_t dir_cluster_number, char *name, char *ext, char *buffer)
+{
+  // idk, for safety i guess
+  uint32_t len_name = strlen(name);
+  while (len_name < 8)
+  {
+    name[len_name] = '\0';
+    len_name++;
+  }
+  uint32_t len_ext = strlen(ext);
+  while (len_ext < 3)
+  {
+    ext[len_ext] = '\0';
+    len_ext++;
+  }
+
+  // write file
+  request.buffer_size = CLUSTER_SIZE;
+  request.parent_cluster_number = dir_cluster_number;
+  memcpy(request.name, name, 8);
+  memcpy(request.ext, ext, 3);
+  memcpy(request.buf, buffer, strlen(buffer));
+  write_syscall(request, &retcode);
+
+  if (retcode == 0)
+  {
+    puts("Finish writing\n", 16, 0xF);
+  }
+  else
+  {
+    puts("Failed to write\n", 16, 0x4);
+  }
+}
+
 void cp(char *argument)
 {
   // Initiate source file
@@ -216,32 +338,8 @@ void cp(char *argument)
   char dest[strlen(argument)];
   memcpy(dest, argument, strlen(argument));
 
-  // random bullshit go
-  request.buffer_size = CLUSTER_SIZE;
-  request.buf = buf;
-
-  // Ensure the argument is null-terminated and padded to 8 characters
-  uint8_t name_len = strlen(source_name);
-  while (name_len < 8)
-  {
-    source_name[name_len] = '\0';
-    name_len++;
-  }
-  // Ensure the argument is null-terminated and padded to 3 characters
-  uint8_t ext_len = strlen(source_ext);
-  while (ext_len < 3)
-  {
-    source_ext[ext_len] = '\0';
-    ext_len++;
-  }
-
-  // create request to read source file
-  memcpy(request.ext, source_ext, 3);
-  request.parent_cluster_number = cwd_cluster_number;
-  memcpy(request.name, source_name, 8);
-
   // read source file
-  read_syscall(request, &retcode);
+  reader_with_clust(cwd_cluster_number, source_name, source_ext);
 
   // copy the source content
   char source_content[strlen(request.buf)];
