@@ -118,39 +118,39 @@ process_context_switch:
     lea  ecx, [esp+0x04] ; Save the base address for struct Context ctx
 
     ; Push stack segment (SS) and stack pointer (ESP) for iret
-    mov eax, [ecx+48]  ; ESP (stack pointer)
+    mov eax, [ecx+56]  ; SS (stack segment)
     push eax
-    mov eax, [ecx+44]  ; SS (stack segment)
+    mov eax, [ecx+12]  ; ESP (stack pointer)
     push eax
 
     ; Push EFLAGS for iret
-    mov eax, [ecx+40]  ; EFLAGS
+    mov eax, [ecx+52]  ; EFLAGS
     push eax
 
     ; Push code segment (CS) and instruction pointer (EIP) for iret
-    mov eax, [ecx+36]  ; CS (code segment)
+    mov eax, [ecx+60]  ; CS (code segment)
     push eax
-    mov eax, [ecx+32]  ; EIP (instruction pointer)
+    mov eax, [ecx+48]  ; EIP (instruction pointer)
     push eax
 
     ; Load segment registers
-    mov eax, [ecx+28]  ; GS
+    mov eax, [ecx+32]  ; GS
     mov gs, ax
-    mov eax, [ecx+26]  ; FS
+    mov eax, [ecx+36]  ; FS
     mov fs, ax
-    mov eax, [ecx+24]  ; ES
+    mov eax, [ecx+40]  ; ES
     mov es, ax
-    mov eax, [ecx+22]  ; DS
+    mov eax, [ecx+44]  ; DS
     mov ds, ax
 
     ; Load general purpose registers
-    mov eax, [ecx+16]  ; EAX
-    mov ebx, [ecx+12]  ; EBX
-    mov ecx, [ecx+8]   ; ECX
-    mov edx, [ecx+4]   ; EDX
-    mov esi, [ecx+20]  ; ESI
-    mov edi, [ecx+18]  ; EDI
-    mov ebp, [ecx+14]  ; EBP
+    mov eax, [ecx+28]  ; EAX
+    mov ebx, [ecx+16]  ; EBX
+    mov edx, [ecx+20]   ; EDX
+    mov esi, [ecx+4]  ; ESI
+    mov edi, [ecx+0]  ; EDI
+    mov ebp, [ecx+8]  ; EBP
+    mov ecx, [ecx]   ; ECX
 
     ; Jump to the new context using iret
     iret

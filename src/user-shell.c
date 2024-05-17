@@ -18,6 +18,8 @@ char current_dir[255] = "/";
 // buffer to store user input
 char buf[256];
 
+char temp_buf[256];
+
 char cur_char;
 
 bool is_entered = false;
@@ -57,9 +59,14 @@ void delete_syscall(struct FAT32DriverRequest request, int32_t* retcode)
   syscall(3, (uint32_t)&request, (uint32_t)retcode, 0);
 }
 
-void get_user_input(char* buf)
+// void get_user_input(char* buf)
+// {
+//   syscall(4, (uint32_t)buf, 0, 0);
+// }
+
+void get_user_input(char* buf, int32_t* retcode)
 {
-  syscall(4, (uint32_t)buf, 0, 0);
+  syscall(4, (uint32_t)buf, (uint32_t)retcode, 0);
 }
 
 void putchar(char buf, uint32_t color)
@@ -769,6 +776,20 @@ void echo(char* argument)
   }
 }
 
+void clear_buf() {
+  for (int i = 0; i < 256; i++)
+  {
+    buf[i] = '\0';
+  }
+}
+
+void clear_temp_buffer() {
+  for (int i = 0; i < 256; i++)
+  {
+    temp_buf[i] = '\0';
+  }
+}
+
 int main(void)
 {
   buf[255] = '\0';
@@ -777,26 +798,30 @@ int main(void)
   activate_keyboard();
   do
   {
-    get_user_input(&cur_char);
+    get_user_input(&cur_char, &retcode);
 
-    if (memcmp(&cur_char, "\n", 1) == 0 && !is_entered)
+    if (retcode == -1) continue;
+
+    if (!memcmp(&cur_char, "\n", 1))
     {
-      command(current_dir);
-      memcpy(buf, "", 1);
+      memcpy(buf, temp_buf, strlen(temp_buf));
       memcpy(&cur_char, "", 1);
+      clear_temp_buffer();
       is_entered = true;
     }
-    else if (memcmp(&cur_char, "\b", 1) == 0)
+    else if (!memcmp(&cur_char, "\b", 1))
     {
       if (strlen(buf) > 0)
       {
-        buf[strlen(buf) - 1] = '\0';
+        temp_buf[strlen(temp_buf) - 1] = '\0';
       }
     }
     else
     {
-      buf[strlen(buf)] = cur_char;
+      temp_buf[strlen(temp_buf)] = cur_char;
     }
+
+    if (!is_entered) continue;
 
 
     if (!memcmp(buf, "cd", 2))
@@ -818,7 +843,9 @@ int main(void)
         }
       }
 
-      memcpy(buf, "", 1);
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else if (!memcmp(buf, "ls", 2))
     {
@@ -833,7 +860,9 @@ int main(void)
         puts(buf, strlen(buf), 0xF);
       }
 
-      memcpy(buf, "", 1);
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else if (!memcmp(buf, "print", 5))
     {
@@ -849,7 +878,9 @@ int main(void)
         puts(directories, strlen(directories), 0xF);
       }
 
-      memcpy(buf, "", 1);
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else if (!memcmp(buf, "mkdir", 5))
     {
@@ -860,7 +891,9 @@ int main(void)
         mkdir(argument);
       }
 
-      memcpy(buf, "", 1);
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else if (!memcmp(buf, "touch", 5))
     {
@@ -871,7 +904,9 @@ int main(void)
         touch(argument);
       }
 
-      memcpy(buf, "", 1);
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else if (!memcmp(buf, "echo", 4))
     {
@@ -882,7 +917,9 @@ int main(void)
         echo(argument);
       }
 
-      memcpy(buf, "", 1);
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else if (!memcmp(buf, "cat", 3))
     {
@@ -893,7 +930,9 @@ int main(void)
         cat(argument);
       }
 
-      memcpy(buf, "", 1);
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else if (!memcmp(buf, "rm", 2))
     {
@@ -904,7 +943,9 @@ int main(void)
         rm(argument);
       }
 
-      memcpy(buf, "", 1);
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else if (!memcmp(buf, "find", 4))
     {
@@ -918,7 +959,9 @@ int main(void)
         find(argument);
       }
 
-      memcpy(buf, "", 1);
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else if (!memcmp(buf, "cp", 2))
     {
@@ -929,7 +972,9 @@ int main(void)
         cp(argument);
       }
 
-      memcpy(buf, "", 1);
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     // else if (!memcmp(buf, "mv", 2))
     // {
@@ -944,10 +989,17 @@ int main(void)
     {
       break;
     }
-    // else
-    // {
-    //   puts("Command not found.\n", 20, 0x4);
-    // }
+    else
+    {
+      puts("Command not found.\n", 20, 0x4);
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
+    }
+
+    retcode = -1;
+    is_entered = false;
   } while (true);
 
   return 0;

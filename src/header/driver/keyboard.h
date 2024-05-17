@@ -55,7 +55,7 @@ void keyboard_state_activate(void);
 void keyboard_state_deactivate(void);
 
 // Get keyboard buffer value and flush the buffer - @param buf Pointer to char buffer
-void get_keyboard_buffer(char* buf);
+void get_keyboard_buffer(char* buf, int32_t* retcode);
 
 /* -- Keyboard Interrupt Service Routine -- */
 

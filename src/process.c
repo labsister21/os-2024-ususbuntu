@@ -101,6 +101,8 @@ int32_t process_create_user_process(struct FAT32DriverRequest request) {
             },
         },
         .eflags = CPU_EFLAGS_BASE_FLAG | CPU_EFLAGS_FLAG_INTERRUPT_ENABLE,
+        .ss = 0,
+        .cs = 0,
         .page_directory_virtual_addr = NULL,
         .eip = 0,
     };

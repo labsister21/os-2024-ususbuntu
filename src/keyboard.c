@@ -69,9 +69,19 @@ void keyboard_state_deactivate(void)
 //     memcpy(buf, keyboard_state.keyboard_buffer, KEYBOARD_BUFFER_SIZE);
 // }
 
-void get_keyboard_buffer(char* buf)
+void get_keyboard_buffer(char* buf, int32_t* retcode)
 {
     buf[0] = keyboard_state.keyboard_buffer;
+
+    if (keyboard_state.keyboard_buffer == 0)
+    {
+        *retcode = -1;
+    }
+    else
+    {
+        *retcode = 0;
+        keyboard_state.keyboard_buffer = 0;
+    }
 }
 
 // Scroll framebuffer up by 1 row, will clear the last row to empty
