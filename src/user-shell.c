@@ -16,9 +16,9 @@ int32_t retcode;
 // current directory text to show up in the cli
 char current_dir[255] = "/";
 // buffer to store user input
-char buf[256];
+char buf[2000];
 
-char temp_buf[256];
+char temp_buf[2000];
 
 char cur_char;
 
@@ -776,6 +776,11 @@ void echo(char* argument)
   }
 }
 
+void clear()
+{
+  syscall(13, 0, 0, 0);
+}
+
 void clear_buf() {
   for (int i = 0; i < 256; i++)
   {
@@ -790,10 +795,57 @@ void clear_temp_buffer() {
   }
 }
 
+void int_to_str(int num, char* str) {
+  int i = 0;
+  int is_negative = 0;
+
+  if (num == 0) {
+    str[i++] = '0';
+    str[i] = '\0';
+    return;
+  }
+
+  if (num < 0) {
+    is_negative = 1;
+    num = -num;
+  }
+
+  while (num != 0) {
+    int rem = num % 10;
+    str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0';
+    num = num / 10;
+  }
+
+  if (is_negative)
+    str[i++] = '-';
+
+  str[i] = '\0';
+
+  int start = 0;
+  int end = i - 1;
+  while (start < end) {
+    char temp = str[start];
+    str[start] = str[end];
+    str[end] = temp;
+    start++;
+    end--;
+  }
+}
+
+void print_kaguya() {
+  cat("kaguya.txt");
+  puts("\n", 1, 0xF);
+  puts("Welcome to UsusBuntu OS\n", 25, 0xF);
+  puts("Type 'help' to see the list of available commands\n", 51, 0xF);
+}
+
 int main(void)
 {
-  buf[255] = '\0';
+  buf[2000] = '\0';
   read_syscall(request, &retcode);
+  print_kaguya();
+  clear_buf();
+  clear_temp_buffer();
   command(current_dir);
   activate_keyboard();
   do
@@ -983,11 +1035,32 @@ int main(void)
     //   if (strlen(argument) > 0)
     //   {
     //     mv(argument);
-    //   }
+    //   }  
     // }
-    else if (!memcmp(buf, "exit", 4))
-    {
-      break;
+    else if (!memcmp(buf, "clear", 5)) {
+      clear();
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
+    }
+    else if (!memcmp(buf, "help", 4)) {
+      puts("List of available commands:\n", 30, 0xF);
+      puts("1.  cd [directory]\n", 20, 0xF);
+      puts("2.  ls\n", 8, 0xF);
+      puts("3.  print\n", 11, 0xF);
+      puts("4.  mkdir [directory]\n", 23, 0xF);
+      puts("5.  touch [file]\n", 18, 0xF);
+      puts("6.  echo [text] > [file]\n", 26, 0xF);
+      puts("7.  cat [file]\n", 16, 0xF);
+      puts("8.  rm [file]\n", 15, 0xF);
+      puts("9.  find [file]\n", 17, 0xF);
+      puts("10. cp [source] [destination]\n", 31, 0xF);
+      puts("11. clear\n", 11, 0xF);
+      puts("12. help\n", 10, 0xF);
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else
     {

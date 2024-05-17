@@ -150,7 +150,7 @@ process_context_switch:
     mov esi, [ecx+4]  ; ESI
     mov edi, [ecx+0]  ; EDI
     mov ebp, [ecx+8]  ; EBP
-    mov ecx, [ecx]   ; ECX
+    mov ecx, [ecx+24]   ; ECX
 
     ; Jump to the new context using iret
     iret

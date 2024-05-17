@@ -88,4 +88,5 @@ insert-shell: inserter user-shell
 	@cd $(OUTPUT_FOLDER) && \
 		./inserter shell 2 $(DISK_NAME).bin
 	@cd $(OUTPUT_FOLDER) && \
-		./inserter tes.txt 2 $(DISK_NAME).bin
+		./inserter ../test/tes.txt 2 $(DISK_NAME).bin
+	@cd $(OUTPUT_FOLDER) && ./inserter ../test/kaguya.txt 2 $(DISK_NAME).bin

@@ -68,16 +68,6 @@ void syscall(struct InterruptFrame frame)
       *(struct FAT32DriverRequest*)frame.cpu.general.ebx);
     break;
   case 4:
-    // keyboard_state_activate();
-    // __asm__("sti");
-    // while (is_keyboard_blocking())
-    //   ;
-
-    // char buffer[KEYBOARD_BUFFER_SIZE];
-    // char buffer;
-    // get_keyboard_buffer(&buffer);
-    // memcpy((char*)frame.cpu.general.ebx, buffer, KEYBOARD_BUFFER_SIZE);
-    // *((char*)frame.cpu.general.ebx) = buffer;
     get_keyboard_buffer((char*)frame.cpu.general.ebx, (int32_t*)frame.cpu.general.ecx);
     break;
   case 5:
@@ -106,6 +96,11 @@ void syscall(struct InterruptFrame frame)
     break;
   case (12):
     print_path_to_dir((char*)frame.cpu.general.ebx, frame.cpu.general.ecx, (char*)frame.cpu.general.edx);
+    break;
+  case (13):
+    framebuffer_clear();
+    framebuffer_state.cur_col = 0;
+    framebuffer_state.cur_row = 0;
     break;
   }
 }

@@ -85,7 +85,7 @@ int32_t process_create_user_process(struct FAT32DriverRequest request) {
             },
             .stack = {
                 .ebp = 0,
-                .esp = 0,
+                .esp = 0x400000 - 4,
             },
             .general = {
                 .ebx = 0,
@@ -100,11 +100,11 @@ int32_t process_create_user_process(struct FAT32DriverRequest request) {
                 .ds = 0,
             },
         },
-        .eflags = CPU_EFLAGS_BASE_FLAG | CPU_EFLAGS_FLAG_INTERRUPT_ENABLE,
-        .ss = 0,
-        .cs = 0,
-        .page_directory_virtual_addr = NULL,
         .eip = 0,
+        .eflags = CPU_EFLAGS_BASE_FLAG | CPU_EFLAGS_FLAG_INTERRUPT_ENABLE,
+        .ss = 0x23,
+        .cs = 0x1b,
+        .page_directory_virtual_addr = NULL,
     };
 
     // Update page directory with user flags
