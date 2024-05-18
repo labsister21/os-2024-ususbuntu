@@ -129,4 +129,6 @@ int32_t process_create_user_process(struct FAT32DriverRequest request);
  */
 bool process_destroy(uint32_t pid);
 
+void ps(char* buffer);
+
 #endif

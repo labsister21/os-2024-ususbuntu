@@ -202,8 +202,7 @@ void keyboard_isr(void)
             if (keyboard_state.buffer_index > 0)
             {
                 keyboard_state.buffer_index--;
-                // keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = 0;
-                keyboard_state.keyboard_buffer = 0;
+                keyboard_state.keyboard_buffer = '\b';
                 if (framebuffer_state.cur_col == 0)
                 {
                     framebuffer_state.cur_row--;
@@ -225,7 +224,6 @@ void keyboard_isr(void)
         // Newline Enter
         else if (ascii_char == '\n')
         {
-            // keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = '\n';
             keyboard_state.keyboard_buffer = '\n';
             keyboard_state_deactivate();
             framebuffer_state.cur_row++;
@@ -246,7 +244,6 @@ void keyboard_isr(void)
             {
                 ascii_char = shift_map[(uint8_t)ascii_char];
             }
-            // keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = ascii_char;
             keyboard_state.keyboard_buffer = ascii_char;
             keyboard_state.buffer_index++;
 
