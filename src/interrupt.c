@@ -5,6 +5,7 @@
 #include "header/filesystem/fat32.h"
 #include "header/driver/framebuffer.h"
 #include "header/stdlib/string.h"
+#include "header/process/process.h"
 
 // I/O port wait, around 1-4 microsecond, for I/O synchronization purpose
 void io_wait(void)
@@ -101,6 +102,15 @@ void syscall(struct InterruptFrame frame)
     framebuffer_clear();
     framebuffer_state.cur_col = 0;
     framebuffer_state.cur_row = 0;
+    break;
+  case (14):
+    process_destroy(frame.cpu.general.ebx);
+    break;
+  case (15):
+    process_create_user_process(*(struct FAT32DriverRequest*)frame.cpu.general.ebx);
+    break;
+  case (16):
+    ps((char*)frame.cpu.general.ebx);
     break;
   }
 }

@@ -832,11 +832,88 @@ void int_to_str(int num, char* str) {
   }
 }
 
+void str_to_int(char* str, int* num) {
+  int result = 0;
+  int i = 0;
+  int is_negative = 0;
+
+  if (str[0] == '-') {
+    is_negative = 1;
+    i++;
+  }
+
+  while (str[i] != '\0') {
+    result = result * 10 + str[i] - '0';
+    i++;
+  }
+
+  if (is_negative)
+    result = -result;
+
+  *num = result;
+}
+
 void print_kaguya() {
   cat("kaguya.txt");
   puts("\n", 1, 0xF);
   puts("Welcome to UsusBuntu OS\n", 25, 0xF);
   puts("Type 'help' to see the list of available commands\n", 51, 0xF);
+}
+
+void exec(char* argument) {
+  // Exec command to create new process
+  char filename[8];
+  split_by_first(argument, '.', filename);
+
+  uint8_t name_len = strlen(filename);
+  request.buffer_size = CLUSTER_SIZE;
+  request.buf = buf;
+  while (name_len < 8)
+  {
+    filename[name_len] = '\0';
+    name_len++;
+  }
+
+  uint8_t ext_len = strlen(argument);
+  while (ext_len < 3)
+  {
+    argument[ext_len] = '\0';
+    ext_len++;
+  }
+
+  memcpy(request.ext, argument, 3);
+  request.parent_cluster_number = cwd_cluster_number;
+  memcpy(request.name, filename, 8);
+
+  read_syscall(request, &retcode);
+  if (retcode == 0)
+  {
+    puts("Executing '", 11, 0xF);
+    puts(request.name, 8, 0xF);
+    puts(".", 1, 0xF);
+    puts(request.ext, 3, 0xF);
+    puts("'\n", 2, 0xF);
+    syscall(15, (uint32_t)&request, 0, 0);
+  }
+  else if (retcode == 3)
+  {
+    puts("File not found\n", 15, 0xF);
+  }
+  else
+  {
+    puts("Unknown error\n", 14, 0xF);
+  }
+}
+
+void ps_syscall() {
+  puts("Process list:\n", 14, 0xF);
+  syscall(16, (uint32_t)buf, 0, 0);
+}
+
+void kill(char* argument) {
+  int pid;
+  str_to_int(argument, &pid);
+  syscall(14, (uint32_t)pid, 0, 0);
 }
 
 int main(void)
@@ -863,7 +940,7 @@ int main(void)
     }
     else if (!memcmp(&cur_char, "\b", 1))
     {
-      if (strlen(buf) > 0)
+      if (strlen(temp_buf) > 0)
       {
         temp_buf[strlen(temp_buf) - 1] = '\0';
       }
@@ -1037,6 +1114,39 @@ int main(void)
     //     mv(argument);
     //   }  
     // }
+    else if (!memcmp(buf, "ps", 2)) {
+      ps_syscall();
+      puts(buf, strlen(buf), 0xF);
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
+    }
+    else if (!memcmp(buf, "exec", 4))
+    {
+      char* argument = buf + 5;
+      remove_newline(argument);
+      if (strlen(argument) > 0)
+      {
+        exec(argument);
+      }
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
+    }
+    else if (!memcmp(buf, "kill", 4))
+    {
+      char* argument = buf + 5;
+      remove_newline(argument);
+      if (strlen(argument) > 0)
+      {
+        kill(argument);
+      }
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
+    }
     else if (!memcmp(buf, "clear", 5)) {
       clear();
       clear_buf();

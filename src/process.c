@@ -161,3 +161,82 @@ bool process_destroy(uint32_t pid) {
 
     return true;
 }
+
+void int_to_str(int num, char* str) {
+    int i = 0;
+    int is_negative = 0;
+
+    if (num == 0) {
+        str[i++] = '0';
+        str[i] = '\0';
+        return;
+    }
+
+    if (num < 0) {
+        is_negative = 1;
+        num = -num;
+    }
+
+    while (num != 0) {
+        int rem = num % 10;
+        str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0';
+        num = num / 10;
+    }
+
+    if (is_negative)
+        str[i++] = '-';
+
+    str[i] = '\0';
+
+    int start = 0;
+    int end = i - 1;
+    while (start < end) {
+        char temp = str[start];
+        str[start] = str[end];
+        str[end] = temp;
+        start++;
+        end--;
+    }
+}
+
+void ps(char* buffer) {
+    char* process_state = NULL;
+    for (int i = 0; i < PROCESS_COUNT_MAX; i++) {
+        if (_process_list[i].metadata.pid != 0) {
+            switch (_process_list[i].metadata.state) {
+            case PROCESS_STATE_READY:
+                process_state = "READY";
+                break;
+            case PROCESS_STATE_RUNNING:
+                process_state = "RUNNING";
+                break;
+            case PROCESS_STATE_TERMINATED:
+                process_state = "TERMINATED";
+                break;
+            case PROCESS_STATE_WAITING:
+                process_state = "WAITING";
+                break;
+            case PROCESS_STATE_NEW:
+                process_state = "NEW";
+                break;
+            default:
+                process_state = "UNKNOWN";
+                break;
+            }
+            memcpy(buffer, _process_list[i].metadata.name, strlen(_process_list[i].metadata.name));
+            buffer += strlen(_process_list[i].metadata.name);
+            memcpy(buffer, " (PID: ", strlen(" (PID: "));
+            buffer += strlen(" (PID: ");
+            char pid_str[10];
+            int_to_str(_process_list[i].metadata.pid, pid_str);
+            memcpy(buffer, pid_str, strlen(pid_str));
+            buffer += strlen(pid_str);
+            memcpy(buffer, ") - ", strlen(") - "));
+            buffer += strlen(") - ");
+            memcpy(buffer, process_state, strlen(process_state));
+            buffer += strlen(process_state);
+            memcpy(buffer, "\n", strlen("\n"));
+            buffer += strlen("\n");
+        }
+    }
+}
