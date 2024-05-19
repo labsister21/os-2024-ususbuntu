@@ -58,6 +58,8 @@ struct Context {
     struct CPURegister cpu;
     uint32_t eip;
     uint32_t eflags;
+    uint32_t ss;
+    uint32_t cs;
     struct PageDirectory* page_directory_virtual_addr;
 } __attribute__((packed));
 
@@ -126,5 +128,7 @@ int32_t process_create_user_process(struct FAT32DriverRequest request);
  * @return    True if process destruction success
  */
 bool process_destroy(uint32_t pid);
+
+void ps(char* buffer);
 
 #endif

@@ -14,6 +14,11 @@ SECTIONS {
         *(.data)
     }
 
+    .bss ALIGN(4): {
+        *(COMMON)
+        *(.bss)
+    }
+
     .rodata ALIGN(4):
     {
         *(.rodata*)

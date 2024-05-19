@@ -40,7 +40,7 @@ struct KeyboardDriverState
     bool shift_on;
     bool ctrl_on;
     uint8_t buffer_index;
-    char keyboard_buffer[KEYBOARD_BUFFER_SIZE];
+    char keyboard_buffer;
 } __attribute((packed));
 
 
@@ -54,7 +54,7 @@ void keyboard_state_activate(void);
 void keyboard_state_deactivate(void);
 
 // Get keyboard buffer value and flush the buffer - @param buf Pointer to char buffer
-void get_keyboard_buffer(char* buf);
+void get_keyboard_buffer(char* buf, int32_t* retcode);
 
 /* -- Keyboard Interrupt Service Routine -- */
 
