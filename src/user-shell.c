@@ -199,6 +199,60 @@ void cd(char *argument)
   }
 }
 
+void reader_with_clust(uint32_t dir_cluster_number, char *name, char *ext)
+{
+  // idk, for safety i guess
+  uint32_t len_name = strlen(name);
+  while (len_name < 8)
+  {
+    name[len_name] = '\0';
+    len_name++;
+  }
+  uint32_t len_ext = strlen(ext);
+  while (len_ext < 3)
+  {
+    ext[len_ext] = '\0';
+    len_ext++;
+  }
+  request.buffer_size = CLUSTER_SIZE;
+  request.parent_cluster_number = dir_cluster_number;
+  memcpy(request.name, name, 8);
+  memcpy(request.ext, ext, 3);
+  read_syscall(request, &retcode);
+}
+
+void writer_with_clust(uint32_t dir_cluster_number, char *name, char *ext, char *buffer)
+{
+  // idk, for safety i guess
+  uint32_t len_name = strlen(name);
+  while (len_name < 8)
+  {
+    name[len_name] = '\0';
+    len_name++;
+  }
+  uint32_t len_ext = strlen(ext);
+  while (len_ext < 3)
+  {
+    ext[len_ext] = '\0';
+    len_ext++;
+  }
+  uint32_t len_buffer = strlen(buffer);
+  while (len_buffer < 512)
+  {
+    buffer[len_buffer] = '\0';
+    len_buffer++;
+  }
+
+  // write file
+  request.buffer_size = CLUSTER_SIZE;
+  request.parent_cluster_number = dir_cluster_number;
+
+  memcpy(request.name, name, 8);
+  memcpy(request.ext, ext, 3);
+  memcpy(request.buf, buffer, 512);
+  write_syscall(request, &retcode);
+}
+
 void cp(char *argument)
 {
   // Initiate source file
@@ -216,35 +270,11 @@ void cp(char *argument)
   char dest[strlen(argument)];
   memcpy(dest, argument, strlen(argument));
 
-  // random bullshit go
-  request.buffer_size = CLUSTER_SIZE;
-  request.buf = buf;
-
-  // Ensure the argument is null-terminated and padded to 8 characters
-  uint8_t name_len = strlen(source_name);
-  while (name_len < 8)
-  {
-    source_name[name_len] = '\0';
-    name_len++;
-  }
-  // Ensure the argument is null-terminated and padded to 3 characters
-  uint8_t ext_len = strlen(source_ext);
-  while (ext_len < 3)
-  {
-    source_ext[ext_len] = '\0';
-    ext_len++;
-  }
-
-  // create request to read source file
-  memcpy(request.ext, source_ext, 3);
-  request.parent_cluster_number = cwd_cluster_number;
-  memcpy(request.name, source_name, 8);
-
   // read source file
-  read_syscall(request, &retcode);
+  reader_with_clust(cwd_cluster_number, source_name, source_ext);
 
   // copy the source content
-  char source_content[strlen(request.buf)];
+  char source_content[512];
   memcpy(source_content, request.buf, strlen(request.buf));
 
   // Source file found, check destination, arguments holds the path
@@ -264,29 +294,10 @@ void cp(char *argument)
       memcpy(target_ext, dest, strlen(dest));
       char target_ext_len = strlen(target_ext);
 
-      while (target_name_len < 8)
-      {
-        target_name[target_name_len] = '\0';
-        target_name_len++;
-      }
-
-      while (target_ext_len < 3)
-      {
-        target_ext[target_ext_len] = '\0';
-        target_ext_len++;
-      }
-
-      // paste the source file
-      memcpy(request.buf, source_content, strlen(source_content));
-      memcpy(request.ext, target_ext, 3);
-      memcpy(request.name, target_name, 8);
-      request.parent_cluster_number = cwd_cluster_number;
-      write_syscall(request, &retcode);
+      writer_with_clust(cwd_cluster_number, target_name, target_ext, source_content);
     }
     else
     {
-      // puts("Destination is a directory\n", 28, 0x4);
-      // saving current directory state
       uint32_t cd_count = 0;
       while (true)
       {
@@ -295,11 +306,6 @@ void cp(char *argument)
         {
           char res[strlen(dest)];
           split_by_first(dest, '/', res);
-          // Debug
-          puts("res: ", 5, 0xF);
-          puts(res, strlen(res), 0xF);
-          puts("\n", 1, 0xF);
-
           cd(res);
         }
         else
@@ -310,14 +316,12 @@ void cp(char *argument)
       }
 
       // implement copying file
-      memcpy(request.buf, source_content, strlen(source_content));
-      memcpy(request.ext, source_ext, 3);
-      memcpy(request.name, source_name, 8);
-      request.parent_cluster_number = cwd_cluster_number;
-      write_syscall(request, &retcode);
+      writer_with_clust(cwd_cluster_number, source_name, source_ext, source_content);
 
-      // puts("Copying file\n", 14, 0xF);
-      // puts("\n", 1, 0xF);
+      if (retcode != 0)
+      {
+        puts("failed to copy \n", 17, 0x4);
+      }
 
       for (uint32_t i = 0; i < cd_count; i++)
       {
