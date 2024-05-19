@@ -112,6 +112,9 @@ void syscall(struct InterruptFrame frame)
   case (16):
     ps((char*)frame.cpu.general.ebx);
     break;
+  case 17:
+    read_rtc((uint8_t*)frame.cpu.general.ebx, (uint8_t*)frame.cpu.general.ecx, (uint8_t*)frame.cpu.general.edx);
+    break;
   }
 }
 

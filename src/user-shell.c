@@ -498,37 +498,6 @@ void find(char* argument)
   {
     puts(directories, strlen(directories), 0xF);
   }
-
-  // if (retcode == 0)
-  // {
-  //   // Directory found, iterate over its contents
-  //   int32_t idx = 0;
-  //   char path[255];
-  //   memcpy(path, "shell\\", 6);
-  //   int pathlen = 6;
-
-  //   while (idx < strlen(request.name) && idx < 8)
-  //   {
-  //     path[pathlen] = request.name[idx];
-  //     pathlen++;
-  //     idx++;
-  //   }
-  //   path[pathlen] = '\\';
-  //   pathlen++;
-
-  //   // Print the directory path
-  //   puts(path, pathlen, 0xF);
-  //   puts("\n", 1, 0xF);
-  // }
-  // else if (retcode == 2)
-  // {
-  //   puts("Directory not found.\n", 21, 0xF);
-  // }
-  // else if (retcode == 1)
-  // {
-  //   puts("File process TBA!\n", 18, 0xF);
-  //   // Not a directory, possibly a file
-  // }
 }
 
 // argument semua teks setelah cp
