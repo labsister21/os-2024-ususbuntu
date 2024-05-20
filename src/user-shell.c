@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include "header/filesystem/fat32.h"
-#include "header/command.h"
 #include "header/stdlib/string.h"
 
 struct ClusterBuffer cl[2] = { 0 };
@@ -58,11 +57,6 @@ void delete_syscall(struct FAT32DriverRequest request, int32_t* retcode)
 {
   syscall(3, (uint32_t)&request, (uint32_t)retcode, 0);
 }
-
-// void get_user_input(char* buf)
-// {
-//   syscall(4, (uint32_t)buf, 0, 0);
-// }
 
 void get_user_input(char* buf, int32_t* retcode)
 {
