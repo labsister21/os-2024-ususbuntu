@@ -115,9 +115,9 @@ void syscall(struct InterruptFrame frame)
     break;
   case (17):
     read_rtc();
-    *((uint32_t*)frame.cpu.general.ebx) = (uint32_t)hour;
-    *((uint32_t*)frame.cpu.general.ecx) = (uint32_t)minute;
-    *((uint32_t*)frame.cpu.general.edx) = (uint32_t)second;
+    *((uint8_t*)frame.cpu.general.ebx) = hour;
+    *((uint8_t*)frame.cpu.general.ecx) = minute;
+    *((uint8_t*)frame.cpu.general.edx) = second;
     break;
   }
 }

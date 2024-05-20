@@ -874,17 +874,17 @@ void custom_sprintf(char *str, const char *format, int h, int m, int s) {
 }
 
 void clock(){
-  uint32_t hour;
-  uint32_t minute;
-  uint32_t second;
+  uint8_t hour;
+  uint8_t minute;
+  uint8_t second;
   syscall(17, (uint32_t)&hour, (uint32_t)&minute, (uint32_t)&second);
 
   char hourChar[2];
   char minuteChar[2];
   char secondChar[2];
-  int_to_str((int) hour, hourChar);
-  int_to_str((int) hour, minuteChar);
-  int_to_str((int) hour, secondChar);
+  int_to_str((int) second, secondChar);
+  int_to_str((int) minute, minuteChar);
+  int_to_str((int) hour + 7, hourChar); //GMT+07 WIB
 
   puts(hourChar, 2, 0xF);
   puts("\n", 1, 0xF);
