@@ -58,6 +58,8 @@ struct Context {
     struct CPURegister cpu;
     uint32_t eip;
     uint32_t eflags;
+    uint32_t ss;
+    uint32_t cs;
     struct PageDirectory* page_directory_virtual_addr;
 } __attribute__((packed));
 
@@ -93,33 +95,13 @@ struct ProcessControlBlock {
     struct Context context;
 };
 
-static struct ProcessControlBlock _process_list[PROCESS_COUNT_MAX];
+extern struct ProcessControlBlock _process_list[PROCESS_COUNT_MAX];
 
-static struct {
+struct ProcessManagerState {
     uint32_t active_process_count;
-} process_manager_state = {
-    .active_process_count = 0,
 };
 
-static struct Context initial_context = {
-    .cpu = {
-        .general = {
-            .eax = 0,
-            .ebx = 0,
-            .ecx = 0,
-            .edx = 0,
-        },
-        .segment = {
-            .gs = 0,
-            .fs = 0,
-            .es = 0,
-            .ds = 0,
-        },
-    },
-    .eflags = CPU_EFLAGS_BASE_FLAG | CPU_EFLAGS_FLAG_INTERRUPT_ENABLE,
-    .page_directory_virtual_addr = NULL,
-    .eip = 0,
-};
+extern struct ProcessManagerState process_manager_state;
 
 
 /**
@@ -146,5 +128,7 @@ int32_t process_create_user_process(struct FAT32DriverRequest request);
  * @return    True if process destruction success
  */
 bool process_destroy(uint32_t pid);
+
+void ps(char* buffer);
 
 #endif

@@ -43,6 +43,8 @@ kernel:
 	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/fat32.c -o $(OUTPUT_FOLDER)/fat32.o
 	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/paging.c -o $(OUTPUT_FOLDER)/paging.o
 	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/process.c -o $(OUTPUT_FOLDER)/process.o
+	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/scheduler.c -o $(OUTPUT_FOLDER)/scheduler.o
+	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/clock.c -o $(OUTPUT_FOLDER)/clock.o
 	@$(LIN) $(LFLAGS) bin/*.o -o $(OUTPUT_FOLDER)/kernel
 	@echo Linking object files and generate elf32...
 	@rm -f *.o
@@ -81,10 +83,10 @@ user-shell:
 	@size --target=binary $(OUTPUT_FOLDER)/shell
 	@rm -f *.o
 
-
 insert-shell: inserter user-shell
 	@echo Inserting shell into root directory...
 	@cd $(OUTPUT_FOLDER) && \
 		./inserter shell 2 $(DISK_NAME).bin
 	@cd $(OUTPUT_FOLDER) && \
-		./inserter tes.txt 2 $(DISK_NAME).bin
+		./inserter ../test/tes.txt 2 $(DISK_NAME).bin
+	@cd $(OUTPUT_FOLDER) && ./inserter ../test/kaguya.txt 2 $(DISK_NAME).bin

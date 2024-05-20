@@ -60,7 +60,7 @@ void framebuffer_clear(void);
 // Print char to framebuffer
 void putchar(char c, uint32_t color);
 
-// Print string to framebuffer
+// // Print string to framebuffer
 void puts(char* str, uint32_t len, uint32_t color);
 
 #endif

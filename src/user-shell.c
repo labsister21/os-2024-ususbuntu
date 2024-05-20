@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include "header/filesystem/fat32.h"
-#include "header/command.h"
 #include "header/stdlib/string.h"
 
 struct ClusterBuffer cl[2] = {0};
@@ -16,7 +15,13 @@ int32_t retcode;
 // current directory text to show up in the cli
 char current_dir[255] = "/";
 // buffer to store user input
-char buf[256];
+char buf[2000];
+
+char temp_buf[2000];
+
+char cur_char;
+
+bool is_entered = false;
 // current directory length to keep track of the current directory length
 uint8_t currentdirlen = 1;
 // current working directory cluster number
@@ -53,16 +58,9 @@ void delete_syscall(struct FAT32DriverRequest request, int32_t *retcode)
   syscall(3, (uint32_t)&request, (uint32_t)retcode, 0);
 }
 
-uint32_t sys_move(struct FAT32DriverRequest *request, struct FAT32DriverRequest *dst_request)
+void get_user_input(char *buf, int32_t *retcode)
 {
-  uint32_t ret;
-  syscall(13, (uint32_t)request, (uint32_t)&ret, (uint32_t)dst_request);
-  return ret;
-}
-
-void get_user_input(char *buf)
-{
-  syscall(4, (uint32_t)buf, 0, 0);
+  syscall(4, (uint32_t)buf, (uint32_t)retcode, 0);
 }
 
 void putchar(char buf, uint32_t color)
@@ -90,12 +88,12 @@ void move_parent_dir(struct FAT32DriverRequest request, int32_t *retcode)
   syscall(9, (uint32_t)&request, (uint32_t)retcode, 0);
 }
 
-void command(char *buf, char *current_dir)
+void command(char *current_dir)
 {
   puts("UsusBuntu@OS-IF2230:", 21, 0xA);
   puts(current_dir, 255, 0x9);
   puts("$ ", 3, 0xF);
-  get_user_input(buf);
+  // get_user_input(buf);
 }
 
 void remove_newline(char *str)
@@ -206,62 +204,105 @@ void cd(char *argument)
   }
 }
 
+void reader_with_clust(uint32_t dir_cluster_number, char *name, char *ext)
+{
+  // idk, for safety i guess
+  uint32_t len_name = strlen(name);
+  while (len_name < 8)
+  {
+    name[len_name] = '\0';
+    len_name++;
+  }
+  uint32_t len_ext = strlen(ext);
+  while (len_ext < 3)
+  {
+    ext[len_ext] = '\0';
+    len_ext++;
+  }
+  request.buffer_size = CLUSTER_SIZE;
+  request.parent_cluster_number = dir_cluster_number;
+  memcpy(request.name, name, 8);
+  memcpy(request.ext, ext, 3);
+  read_syscall(request, &retcode);
+}
+
+void writer_with_clust(uint32_t dir_cluster_number, char *name, char *ext, char *buffer)
+{
+  // idk, for safety i guess
+  uint32_t len_name = strlen(name);
+  while (len_name < 8)
+  {
+    name[len_name] = '\0';
+    len_name++;
+  }
+  uint32_t len_ext = strlen(ext);
+  while (len_ext < 3)
+  {
+    ext[len_ext] = '\0';
+    len_ext++;
+  }
+  uint32_t len_buffer = strlen(buffer);
+  while (len_buffer < 512)
+  {
+    buffer[len_buffer] = '\0';
+    len_buffer++;
+  }
+
+  // write file
+  request.buffer_size = CLUSTER_SIZE;
+  request.parent_cluster_number = dir_cluster_number;
+
+  memcpy(request.name, name, 8);
+  memcpy(request.ext, ext, 3);
+  memcpy(request.buf, buffer, 512);
+  write_syscall(request, &retcode);
+}
+
+int strlen_before_char(char *str, char cmp)
+{
+  int i = 0;
+  while (str[i] != cmp && str[i] != '\0')
+  {
+    i++;
+  }
+  return i;
+}
+
 void cp(char *argument)
 {
   // Initiate source file
-  char source[12];
-  char source_name[8];
-  char source_ext[3];
-
+  char source[strlen_before_char(argument, ' ')];
   // getting the source file name and extension
   split_by_first(argument, ' ', source);
+
+  char source_name[strlen_before_char(source, '.')];
   split_by_first(source, '.', source_name);
 
-  memcpy(source_ext, source, strlen(source));
+  char source_ext[3];
+  memcpy(source_ext, source, 3);
+
+  // memcpy(source_ext, source, strlen(source));
+  // puts("Extension: ", 12, 0x4);
+  // puts(source_ext, strlen(source_ext), 0x4);
+  // puts("\n", 1, 0x4);
 
   // getting the destination path
   char dest[strlen(argument)];
   memcpy(dest, argument, strlen(argument));
 
-  // random bullshit go
-  request.buffer_size = CLUSTER_SIZE;
-  request.buf = buf;
-
-  // Ensure the argument is null-terminated and padded to 8 characters
-  uint8_t name_len = strlen(source_name);
-  while (name_len < 8)
-  {
-    source_name[name_len] = '\0';
-    name_len++;
-  }
-  // Ensure the argument is null-terminated and padded to 3 characters
-  uint8_t ext_len = strlen(source_ext);
-  while (ext_len < 3)
-  {
-    source_ext[ext_len] = '\0';
-    ext_len++;
-  }
-
-  // create request to read source file
-  memcpy(request.ext, source_ext, 3);
-  request.parent_cluster_number = cwd_cluster_number;
-  memcpy(request.name, source_name, 8);
-
   // read source file
-  read_syscall(request, &retcode);
+  reader_with_clust(cwd_cluster_number, source_name, source_ext);
 
   // copy the source content
-  char source_content[strlen(request.buf)];
-  memcpy(source_content, request.buf, strlen(request.buf));
+  // char source_content[512];
+  memcpy(buf, request.buf, strlen(request.buf));
 
   // Source file found, check destination, arguments holds the path
   if (retcode == 0)
   {
-    if (is_include(dest, '.'))
+    if (is_include(dest, '.') && !is_include(dest, '/') && strlen(dest) <= 12)
     {
-      // puts("Destination is a file\n", 23, 0x4);
       // Initiate target file
-      char target[12];
       char target_name[8];
       char target_ext[3];
 
@@ -271,29 +312,18 @@ void cp(char *argument)
       memcpy(target_ext, dest, strlen(dest));
       char target_ext_len = strlen(target_ext);
 
-      while (target_name_len < 8)
-      {
-        target_name[target_name_len] = '\0';
-        target_name_len++;
-      }
+      // puts("Target file", 12, 0x4);
+      // puts(target_name, target_name_len, 0x4);
+      // puts("\n", 1, 0x4);
 
-      while (target_ext_len < 3)
-      {
-        target_ext[target_ext_len] = '\0';
-        target_ext_len++;
-      }
+      // puts("Target extension", 16, 0x4);
+      // puts(target_ext, target_ext_len, 0x4);
+      // puts("\n", 1, 0x4);
 
-      // paste the source file
-      memcpy(request.buf, source_content, strlen(source_content));
-      memcpy(request.ext, target_ext, 3);
-      memcpy(request.name, target_name, 8);
-      request.parent_cluster_number = cwd_cluster_number;
-      write_syscall(request, &retcode);
+      writer_with_clust(cwd_cluster_number, target_name, target_ext, buf);
     }
-    else
+    else if (!is_include(dest, '.'))
     {
-      // puts("Destination is a directory\n", 28, 0x4);
-      // saving current directory state
       uint32_t cd_count = 0;
       while (true)
       {
@@ -302,11 +332,6 @@ void cp(char *argument)
         {
           char res[strlen(dest)];
           split_by_first(dest, '/', res);
-          // Debug
-          puts("res: ", 5, 0xF);
-          puts(res, strlen(res), 0xF);
-          puts("\n", 1, 0xF);
-
           cd(res);
         }
         else
@@ -317,24 +342,22 @@ void cp(char *argument)
       }
 
       // implement copying file
-      memcpy(request.buf, source_content, strlen(source_content));
-      memcpy(request.ext, source_ext, 3);
-      memcpy(request.name, source_name, 8);
-      request.parent_cluster_number = cwd_cluster_number;
-      write_syscall(request, &retcode);
+      writer_with_clust(cwd_cluster_number, source_name, source_ext, buf);
 
-      // puts("Copying file\n", 14, 0xF);
-      // puts("\n", 1, 0xF);
+      if (retcode != 0)
+      {
+        puts("failed to copy \n", 17, 0x4);
+      }
 
       for (uint32_t i = 0; i < cd_count; i++)
       {
         cd("..");
       }
     }
-    // else
-    // {
-    //   puts("Invalid path\n", 15, 0x4);
-    // }
+    else
+    {
+      puts("invalid target\n", 15, 0x4);
+    }
   }
   else if (retcode == 3)
   {
@@ -453,11 +476,17 @@ void rm(char *argument)
     }
     else if (retcode == 1)
     {
-      memcpy(request.ext, "", 3);
+      read_syscall(request, &retcode);
+      if (retcode == 0)
+      {
+        memcpy(request.ext, "", 3);
+      }
+      else
+      {
+        memcpy(request.ext, argument, 3);
+      }
     }
   }
-  puts(request.ext, 3, 0xF);
-  puts("\n", 1, 0xF);
 
   delete_syscall(request, &retcode);
   if (retcode == 0)
@@ -472,12 +501,17 @@ void rm(char *argument)
       puts("File '", 6, 0xF);
     }
     puts(request.name, 8, 0xF);
+    if (memcmp(request.ext, "dir", 3) != 0)
+    {
+      puts(".", 1, 0xF);
+      puts(request.ext, 3, 0xF);
+    }
     puts("' is deleted.\n", 15, 0xF);
   }
   else if (retcode == 1)
   {
-    puts("Cannot remove: File '", 22, 0xF);
-    if (memcmp(request.ext, "dir", 3))
+    puts("Cannot remove: '", 22, 0xF);
+    if (memcmp(request.ext, "dir", 3) == 0)
     {
       puts("Folder '", 8, 0xF);
     }
@@ -485,7 +519,13 @@ void rm(char *argument)
     {
       puts("File '", 6, 0xF);
     }
-    puts("Not found", 9, 0xF);
+    puts(request.name, 8, 0xF);
+    if (memcmp(request.ext, "dir", 3) != 0)
+    {
+      puts(".", 1, 0xF);
+      puts(request.ext, 3, 0xF);
+    }
+    puts("Not found\n", 10, 0xF);
   }
   else if (retcode == 2)
   {
@@ -529,56 +569,6 @@ void find(char *argument)
   else
   {
     puts(directories, strlen(directories), 0xF);
-  }
-
-  // if (retcode == 0)
-  // {
-  //   // Directory found, iterate over its contents
-  //   int32_t idx = 0;
-  //   char path[255];
-  //   memcpy(path, "shell\\", 6);
-  //   int pathlen = 6;
-
-  //   while (idx < strlen(request.name) && idx < 8)
-  //   {
-  //     path[pathlen] = request.name[idx];
-  //     pathlen++;
-  //     idx++;
-  //   }
-  //   path[pathlen] = '\\';
-  //   pathlen++;
-
-  //   // Print the directory path
-  //   puts(path, pathlen, 0xF);
-  //   puts("\n", 1, 0xF);
-  // }
-  // else if (retcode == 2)
-  // {
-  //   puts("Directory not found.\n", 21, 0xF);
-  // }
-  // else if (retcode == 1)
-  // {
-  //   puts("File process TBA!\n", 18, 0xF);
-  //   // Not a directory, possibly a file
-  // }
-}
-
-void cast_int_char(uint32_t num, char *res)
-{
-  int idx = 0;
-  while (num > 0)
-  {
-    res[idx] = num % 10 + '0';
-    num /= 10;
-    idx++;
-  }
-  res[idx] = '\0';
-  int len = strlen(res);
-  for (int i = 0; i < len / 2; i++)
-  {
-    char temp = res[i];
-    res[i] = res[len - i - 1];
-    res[len - i - 1] = temp;
   }
 }
 
@@ -734,8 +724,6 @@ void mv(char *argument)
   puts(dst_req.name, 8, 0xF);
   puts(".", 1, 0xF);
   puts(dst_req.ext, 3, 0xF);
-
-  sys_move(&src_req, &dst_req);
 }
 
 void touch(char *argument)
@@ -744,7 +732,7 @@ void touch(char *argument)
   split_by_first(argument, '.', filename);
 
   request.buffer_size = CLUSTER_SIZE;
-  request.buf = "ini hasil tes touch" + '\0';
+  request.buf = buf;
   if (strlen(filename) < 8)
   {
     filename[strlen(filename)] = '\0';
@@ -832,82 +820,302 @@ void remove_petik(char *str)
   str[len - shift] = '\0';
 }
 
-// void echo(char *argument)
-// {
-//   remove_space(argument);
-//   remove_petik(argument);
-//   char text[strlen(argument)];
-//   split_by_first(argument, '>', text);
+void echo(char *argument)
+{
+  remove_space(argument);
+  remove_petik(argument);
+  char text[strlen(argument)];
+  split_by_first(argument, '>', text);
 
-//   request.buffer_size = CLUSTER_SIZE;
-//   text[strlen(text)] = '\0';
+  request.buffer_size = CLUSTER_SIZE;
+  text[strlen(text)] = '\0';
 
-//   request.parent_cluster_number = cwd_cluster_number;
-//   char name[8];
-//   split_by_first(argument, '.', name);
+  request.parent_cluster_number = cwd_cluster_number;
+  char name[8];
+  split_by_first(argument, '.', name);
 
-//   if (strlen(argument) < 3)
-//   {
-//     argument[strlen(argument)] = '\0';
-//   }
-//   else
-//   {
-//     argument[8] = '\0';
-//   }
-//   if (strlen(name) < 3)
-//   {
-//     name[strlen(name)] = '\0';
-//   }
-//   else
-//   {
-//     name[8] = '\0';
-//   }
+  if (strlen(argument) < 3)
+  {
+    argument[strlen(argument)] = '\0';
+  }
+  else
+  {
+    argument[8] = '\0';
+  }
+  if (strlen(name) < 3)
+  {
+    name[strlen(name)] = '\0';
+  }
+  else
+  {
+    name[8] = '\0';
+  }
 
-//   request.buf = text;
-//   memcpy(request.ext, argument, 3);
-//   memcpy(request.name, name, 8);
+  request.buf = text;
+  memcpy(request.ext, argument, 3);
+  memcpy(request.name, name, 8);
 
-//   read_syscall(request, &retcode);
-//   if (retcode == 0)
-//   {
-//     delete_syscall(request, &retcode);
-//     write_syscall(request, &retcode);
+  read_syscall(request, &retcode);
+  if (retcode == 0)
+  {
+    delete_syscall(request, &retcode);
+    write_syscall(request, &retcode);
 
-//     if (retcode != 0)
-//     {
-//       puts("Unknown error.\n", 15, 0xF);
-//     }
-//     else
-//     {
-//       puts("File '", 8, 0xF);
-//       puts(request.name, 8, 0xF);
-//       puts(".", 1, 0xF);
-//       puts(request.ext, 3, 0xF);
-//       puts("' updated.\n", 12, 0xF);
-//     }
-//   }
-//   else if (retcode == 1)
-//   {
-//     puts("Not a file.\n", 12, 0xF);
-//   }
-//   else if (retcode == 3)
-//   {
-//     puts("Not found.\n", 11, 0xF);
-//   }
-//   else
-//   {
-//     puts("Unknown error", 13, 0xF);
-//   }
-// }
+    if (retcode != 0)
+    {
+      puts("Unknown error.\n", 15, 0xF);
+    }
+    else
+    {
+      puts("File '", 8, 0xF);
+      puts(request.name, 8, 0xF);
+      puts(".", 1, 0xF);
+      puts(request.ext, 3, 0xF);
+      puts("' updated.\n", 12, 0xF);
+    }
+  }
+  else if (retcode == 1)
+  {
+    puts("Not a file.\n", 12, 0xF);
+  }
+  else if (retcode == 3)
+  {
+    puts("Not found.\n", 11, 0xF);
+  }
+  else
+  {
+    puts("Unknown error", 13, 0xF);
+  }
+}
+
+void clear()
+{
+  syscall(13, 0, 0, 0);
+}
+
+void clear_buf()
+{
+  for (int i = 0; i < 256; i++)
+  {
+    buf[i] = '\0';
+  }
+}
+
+void clear_temp_buffer()
+{
+  for (int i = 0; i < 256; i++)
+  {
+    temp_buf[i] = '\0';
+  }
+}
+
+void int_to_str(int num, char *str)
+{
+  int i = 0;
+  int is_negative = 0;
+
+  if (num == 0)
+  {
+    str[i++] = '0';
+    str[i] = '\0';
+    return;
+  }
+
+  if (num < 0)
+  {
+    is_negative = 1;
+    num = -num;
+  }
+
+  while (num != 0)
+  {
+    int rem = num % 10;
+    str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0';
+    num = num / 10;
+  }
+
+  if (is_negative)
+    str[i++] = '-';
+
+  str[i] = '\0';
+
+  int start = 0;
+  int end = i - 1;
+  while (start < end)
+  {
+    char temp = str[start];
+    str[start] = str[end];
+    str[end] = temp;
+    start++;
+    end--;
+  }
+}
+
+void str_to_int(char *str, int *num)
+{
+  int result = 0;
+  int i = 0;
+  int is_negative = 0;
+
+  if (str[0] == '-')
+  {
+    is_negative = 1;
+    i++;
+  }
+
+  while (str[i] != '\0')
+  {
+    result = result * 10 + str[i] - '0';
+    i++;
+  }
+
+  if (is_negative)
+    result = -result;
+
+  *num = result;
+}
+
+void print_kaguya()
+{
+  cat("kaguya.txt");
+  puts("\n", 1, 0xF);
+  puts("Welcome to UsusBuntu OS\n", 25, 0xF);
+  puts("Type 'help' to see the list of available commands\n", 51, 0xF);
+}
+
+void exec(char *argument)
+{
+  // Exec command to create new process
+  char filename[8];
+  split_by_first(argument, '.', filename);
+
+  uint8_t name_len = strlen(filename);
+  request.buffer_size = CLUSTER_SIZE;
+  request.buf = buf;
+  while (name_len < 8)
+  {
+    filename[name_len] = '\0';
+    name_len++;
+  }
+
+  uint8_t ext_len = strlen(argument);
+  while (ext_len < 3)
+  {
+    argument[ext_len] = '\0';
+    ext_len++;
+  }
+
+  memcpy(request.ext, argument, 3);
+  request.parent_cluster_number = cwd_cluster_number;
+  memcpy(request.name, filename, 8);
+
+  read_syscall(request, &retcode);
+  if (retcode == 0)
+  {
+    puts("Executing '", 11, 0xF);
+    puts(request.name, 8, 0xF);
+    puts(".", 1, 0xF);
+    puts(request.ext, 3, 0xF);
+    puts("'\n", 2, 0xF);
+    syscall(15, (uint32_t)&request, 0, 0);
+  }
+  else if (retcode == 3)
+  {
+    puts("File not found\n", 15, 0xF);
+  }
+  else
+  {
+    puts("Unknown error\n", 14, 0xF);
+  }
+}
+
+void ps_syscall()
+{
+  puts("Process list:\n", 14, 0xF);
+  syscall(16, (uint32_t)buf, 0, 0);
+}
+
+void kill(char *argument)
+{
+  int pid;
+  str_to_int(argument, &pid);
+  syscall(14, (uint32_t)pid, 0, 0);
+}
+
+void custom_sprintf(char *str, const char *format, int h, int m, int s)
+{
+  // This assumes the format is always "%02d:%02d:%02d"
+  str[0] = (h / 10) + '0';
+  str[1] = (h % 10) + '0';
+  str[2] = ':';
+  str[3] = (m / 10) + '0';
+  str[4] = (m % 10) + '0';
+  str[5] = ':';
+  str[6] = (s / 10) + '0';
+  str[7] = (s % 10) + '0';
+  str[8] = '\0';
+}
+
+void clock()
+{
+  uint8_t hour;
+  uint8_t minute;
+  uint8_t second;
+  syscall(17, (uint32_t)&hour, (uint32_t)&minute, (uint32_t)&second);
+
+  char hourChar[2];
+  char minuteChar[2];
+  char secondChar[2];
+  int_to_str((int)second, secondChar);
+  int_to_str((int)minute, minuteChar);
+  int_to_str((int)hour + 7, hourChar); // GMT+07 WIB
+
+  puts(hourChar, 2, 0xF);
+  puts("\n", 1, 0xF);
+  puts(minuteChar, 2, 0xF);
+  puts("\n", 1, 0xF);
+  puts(secondChar, 2, 0xF);
+  puts("\n", 1, 0xF);
+}
 
 int main(void)
 {
-  buf[255] = '\0';
+  buf[2000] = '\0';
   read_syscall(request, &retcode);
+  print_kaguya();
+  clear_buf();
+  clear_temp_buffer();
+  command(current_dir);
+  activate_keyboard();
   do
   {
-    activate_keyboard();
-    command(buf, current_dir);
+    get_user_input(&cur_char, &retcode);
+
+    if (retcode == -1)
+      continue;
+
+    if (!memcmp(&cur_char, "\n", 1))
+    {
+      memcpy(buf, temp_buf, strlen(temp_buf));
+      memcpy(&cur_char, "", 1);
+      clear_temp_buffer();
+      is_entered = true;
+    }
+    else if (!memcmp(&cur_char, "\b", 1))
+    {
+      if (strlen(temp_buf) > 0)
+      {
+        temp_buf[strlen(temp_buf) - 1] = '\0';
+      }
+    }
+    else
+    {
+      temp_buf[strlen(temp_buf)] = cur_char;
+    }
+
+    if (!is_entered)
+      continue;
+
     if (!memcmp(buf, "cd", 2))
     {
       char *argument = buf + 3;
@@ -926,6 +1134,10 @@ int main(void)
           break;
         }
       }
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else if (!memcmp(buf, "ls", 2))
     {
@@ -939,6 +1151,10 @@ int main(void)
       {
         puts(buf, strlen(buf), 0xF);
       }
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else if (!memcmp(buf, "print", 5))
     {
@@ -953,6 +1169,10 @@ int main(void)
       {
         puts(directories, strlen(directories), 0xF);
       }
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else if (!memcmp(buf, "mkdir", 5))
     {
@@ -962,6 +1182,10 @@ int main(void)
       {
         mkdir(argument);
       }
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else if (!memcmp(buf, "touch", 5))
     {
@@ -971,16 +1195,24 @@ int main(void)
       {
         touch(argument);
       }
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
-    // else if (!memcmp(buf, "echo", 4))
-    // {
-    //   char *argument = buf + 5;
-    //   remove_newline(argument);
-    //   if (strlen(argument) > 0)
-    //   {
-    //     echo(argument);
-    //   }
-    // }
+    else if (!memcmp(buf, "echo", 4))
+    {
+      char *argument = buf + 5;
+      remove_newline(argument);
+      if (strlen(argument) > 0)
+      {
+        echo(argument);
+      }
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
+    }
     else if (!memcmp(buf, "cat", 3))
     {
       char *argument = buf + 4;
@@ -989,6 +1221,10 @@ int main(void)
       {
         cat(argument);
       }
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else if (!memcmp(buf, "rm", 2))
     {
@@ -998,6 +1234,10 @@ int main(void)
       {
         rm(argument);
       }
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else if (!memcmp(buf, "find", 4))
     {
@@ -1010,6 +1250,10 @@ int main(void)
       {
         find(argument);
       }
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else if (!memcmp(buf, "cp", 2))
     {
@@ -1019,24 +1263,103 @@ int main(void)
       {
         cp(argument);
       }
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else if (!memcmp(buf, "mv", 2))
     {
-      char *argument = buf + 3;
+      char* argument = buf + 3;
       remove_newline(argument);
       if (strlen(argument) > 0)
       {
         mv(argument);
       }
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
-    else if (!memcmp(buf, "exit", 4))
+    else if (!memcmp(buf, "ps", 2))
     {
-      break;
+      ps_syscall();
+      puts(buf, strlen(buf), 0xF);
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
+    }
+    else if (!memcmp(buf, "exec", 4))
+    {
+      char *argument = buf + 5;
+      remove_newline(argument);
+      if (strlen(argument) > 0)
+      {
+        exec(argument);
+      }
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
+    }
+    else if (!memcmp(buf, "kill", 4))
+    {
+      char *argument = buf + 5;
+      remove_newline(argument);
+      if (strlen(argument) > 0)
+      {
+        kill(argument);
+      }
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
+    }
+    else if (!memcmp(buf, "clear", 5))
+    {
+      clear();
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
+    }
+    else if (!memcmp(buf, "help", 4))
+    {
+      puts("List of available commands:\n", 30, 0xF);
+      puts("1.  cd [directory]\n", 20, 0xF);
+      puts("2.  ls\n", 8, 0xF);
+      puts("3.  print\n", 11, 0xF);
+      puts("4.  mkdir [directory]\n", 23, 0xF);
+      puts("5.  touch [file]\n", 18, 0xF);
+      puts("6.  echo [text] > [file]\n", 26, 0xF);
+      puts("7.  cat [file]\n", 16, 0xF);
+      puts("8.  rm [file]\n", 15, 0xF);
+      puts("9.  find [file]\n", 17, 0xF);
+      puts("10. cp [source] [destination]\n", 31, 0xF);
+      puts("11. clear\n", 11, 0xF);
+      puts("12. help\n", 10, 0xF);
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
+    }
+    else if (!memcmp(buf, "clock", 5))
+    {
+      clock();
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
     else
     {
       puts("Command not found.\n", 20, 0x4);
+
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
     }
+
+    retcode = -1;
+    is_entered = false;
   } while (true);
 
   return 0;

@@ -18,7 +18,10 @@
     "stdbool.h": "c",
     "keyboard.h": "c",
     "command.h": "c",
-    "process.h": "c"
+    "process.h": "c",
+    "paging.h": "c",
+    "scheduler.h": "c",
+    "clock.h": "c"
   },
   "C_Cpp_Runner.msvcBatchPath": "",
   "C_Cpp_Runner.cCompilerPath": "gcc",

@@ -46,7 +46,7 @@ static struct KeyboardDriverState keyboard_state;
 // Activate keyboard ISR / start listen keyboard & save to buffer
 void keyboard_state_activate(void)
 {
-    memset(keyboard_state.keyboard_buffer, '\0', sizeof(keyboard_state.keyboard_buffer));
+    // memset(keyboard_state.keyboard_buffer, '\0', sizeof(keyboard_state.keyboard_buffer));
     keyboard_state.buffer_index = 0;
     keyboard_state.keyboard_input_on = true;
     keyboard_state.shift_on = false;
@@ -63,10 +63,19 @@ void keyboard_state_deactivate(void)
     keyboard_state.keyboard_input_on = false;
 }
 
-// Get keyboard buffer values - @param buf Pointer to char buffer, recommended size at least KEYBOARD_BUFFER_SIZE
-void get_keyboard_buffer(char* buf)
+void get_keyboard_buffer(char* buf, int32_t* retcode)
 {
-    memcpy(buf, keyboard_state.keyboard_buffer, KEYBOARD_BUFFER_SIZE);
+    buf[0] = keyboard_state.keyboard_buffer;
+
+    if (keyboard_state.keyboard_buffer == 0)
+    {
+        *retcode = -1;
+    }
+    else
+    {
+        *retcode = 0;
+        keyboard_state.keyboard_buffer = 0;
+    }
 }
 
 // Scroll framebuffer up by 1 row, will clear the last row to empty
@@ -193,7 +202,7 @@ void keyboard_isr(void)
             if (keyboard_state.buffer_index > 0)
             {
                 keyboard_state.buffer_index--;
-                keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = 0;
+                keyboard_state.keyboard_buffer = '\b';
                 if (framebuffer_state.cur_col == 0)
                 {
                     framebuffer_state.cur_row--;
@@ -215,7 +224,7 @@ void keyboard_isr(void)
         // Newline Enter
         else if (ascii_char == '\n')
         {
-            keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = '\n';
+            keyboard_state.keyboard_buffer = '\n';
             keyboard_state_deactivate();
             framebuffer_state.cur_row++;
             framebuffer_state.cur_col = 0;
@@ -235,7 +244,7 @@ void keyboard_isr(void)
             {
                 ascii_char = shift_map[(uint8_t)ascii_char];
             }
-            keyboard_state.keyboard_buffer[keyboard_state.buffer_index] = ascii_char;
+            keyboard_state.keyboard_buffer = ascii_char;
             keyboard_state.buffer_index++;
 
             // Print the character to the screen
