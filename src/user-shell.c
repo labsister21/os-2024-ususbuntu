@@ -210,7 +210,7 @@ void cd(char* argument)
   }
 }
 
-void reader_with_clust(uint32_t dir_cluster_number, char *name, char *ext)
+void reader_with_clust(uint32_t dir_cluster_number, char* name, char* ext)
 {
   // idk, for safety i guess
   uint32_t len_name = strlen(name);
@@ -232,7 +232,7 @@ void reader_with_clust(uint32_t dir_cluster_number, char *name, char *ext)
   read_syscall(request, &retcode);
 }
 
-void writer_with_clust(uint32_t dir_cluster_number, char *name, char *ext, char *buffer)
+void writer_with_clust(uint32_t dir_cluster_number, char* name, char* ext, char* buffer)
 {
   // idk, for safety i guess
   uint32_t len_name = strlen(name);
@@ -264,70 +264,17 @@ void writer_with_clust(uint32_t dir_cluster_number, char *name, char *ext, char 
   write_syscall(request, &retcode);
 }
 
-void reader_with_clust(uint32_t dir_cluster_number, char *name, char *ext)
-{
-  // idk, for safety i guess
-  uint32_t len_name = strlen(name);
-  while (len_name < 8)
-  {
-    name[len_name] = '\0';
-    len_name++;
-  }
-  uint32_t len_ext = strlen(ext);
-  while (len_ext < 3)
-  {
-    ext[len_ext] = '\0';
-    len_ext++;
-  }
-  request.buffer_size = CLUSTER_SIZE;
-  request.parent_cluster_number = dir_cluster_number;
-  memcpy(request.name, name, 8);
-  memcpy(request.ext, ext, 3);
-  read_syscall(request, &retcode);
-}
-
-void writer_with_clust(uint32_t dir_cluster_number, char *name, char *ext, char *buffer)
-{
-  // idk, for safety i guess
-  uint32_t len_name = strlen(name);
-  while (len_name < 8)
-  {
-    name[len_name] = '\0';
-    len_name++;
-  }
-  uint32_t len_ext = strlen(ext);
-  while (len_ext < 3)
-  {
-    ext[len_ext] = '\0';
-    len_ext++;
-  }
-  uint32_t len_buffer = strlen(buffer);
-  while (len_buffer < 512)
-  {
-    buffer[len_buffer] = '\0';
-    len_buffer++;
-  }
-
-  // write file
-  request.buffer_size = CLUSTER_SIZE;
-  request.parent_cluster_number = dir_cluster_number;
-
-  memcpy(request.name, name, 8);
-  memcpy(request.ext, ext, 3);
-  memcpy(request.buf, buffer, 512);
-  write_syscall(request, &retcode);
-}
-
-void cp(char *argument)
+void cp(char* argument)
 {
   // Initiate source file
-  char source[12];
-  char source_name[8];
-  char source_ext[3];
+  char source[strlen(argument)];
 
   // getting the source file name and extension
   split_by_first(argument, ' ', source);
+  char source_name[strlen(source)];
+  
   split_by_first(source, '.', source_name);
+  char source_ext[strlen(source)];
 
   memcpy(source_ext, source, strlen(source));
 
@@ -1165,12 +1112,16 @@ int main(void)
     }
     // else if (!memcmp(buf, "mv", 2))
     // {
-    //   char *argument = buf + 3;
+    //   char* argument = buf + 3;
     //   remove_newline(argument);
     //   if (strlen(argument) > 0)
     //   {
     //     mv(argument);
-    //   }  
+    //   }
+
+    //   clear_buf();
+    //   command(current_dir);
+    //   activate_keyboard();
     // }
     else if (!memcmp(buf, "ps", 2)) {
       ps_syscall();
