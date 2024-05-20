@@ -977,14 +977,12 @@ void echo(char *argument)
   remove_petik(argument);
   char text[256];
   split_by_first(argument, '>', text);
-  puts(text, 256, 0xF);
   request.buffer_size = CLUSTER_SIZE;
   text[256] = '\0';
 
   request.parent_cluster_number = cwd_cluster_number;
   char name[8];
   split_by_first(argument, '.', name);
-  puts(text, 256, 0xF);
 
   argument[3] = '\0';
   if (strlen(argument) < 3)
@@ -997,17 +995,14 @@ void echo(char *argument)
   {
     name[strlen(name)] = '\0';
   }
-  puts(text, 256, 0xF);
 
   if (strlen(text) < 256)
   {
     text[strlen(text)] = '\0';
   }
   text[256] = '\0';
-  puts(text, 256, 0xF);
 
   memcpy(request.buf, text, 256);
-  puts(text, 256, 0xF);
   argument[3] = '\0';
   memcpy(request.ext, argument, 4);
   memcpy(request.name, name, 8);
