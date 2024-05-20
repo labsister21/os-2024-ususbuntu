@@ -134,6 +134,7 @@ struct FAT32DriverRequest
 
 uint32_t move_to_child_directory(struct FAT32DriverRequest request);
 uint32_t move_to_parent_directory(struct FAT32DriverRequest request);
+uint32_t move_dir(struct FAT32DriverRequest src_req, struct FAT32DriverRequest dest_req);
 
 /* -- Driver Interfaces -- */
 
@@ -253,7 +254,5 @@ void print_path_to_dir(char *buffer, uint32_t dir_cluster_number, const char *ta
 void clear_buffer(char *buffer, size_t size);
 
 void find_and_print_path(char *buffer, uint32_t dir_cluster_number, const char *target_dir_name, int *dir_idx, int *level, bool *found);
-
-uint32_t move(struct FAT32DriverRequest src_req, struct FAT32DriverRequest dest_req);
 
 #endif

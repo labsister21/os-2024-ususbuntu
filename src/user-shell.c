@@ -48,6 +48,13 @@ void read_dir_syscall(struct FAT32DriverRequest request, int32_t *retcode)
   syscall(1, (uint32_t)&request, (uint32_t)retcode, 0);
 }
 
+int32_t move_sys(struct FAT32DriverRequest *request, struct FAT32DriverRequest *dst_request)
+{
+  uint32_t ret;
+  syscall(18, (uint32_t)request, (uint32_t)&ret, (uint32_t)dst_request);
+  return ret;
+}
+
 void write_syscall(struct FAT32DriverRequest request, int32_t *retcode)
 {
   syscall(2, (uint32_t)&request, (uint32_t)retcode, 0);
@@ -663,12 +670,11 @@ void mv(char *argument)
 
   memcpy(source_buffer, source, strlen(source));
   memcpy(dest_buffer, argument, strlen(argument));
+
   source_cluster_number = search_cluster_resolve_path(cwd_cluster_number, source);
   dest_cluster_number = search_cluster_resolve_path(cwd_cluster_number, argument);
   get_last_name(source, last_name);
   get_last_name(argument, dest_last_name);
-
-  // Check extension
   char src_name[8];
   if (is_include(last_name, '.'))
   {
@@ -682,10 +688,9 @@ void mv(char *argument)
     memcpy(src_req.ext, "dir", 3);
     memcpy(src_name, last_name, 8);
     read_dir_syscall(src_req, &retcode);
-    if (retcode == 0)
+    if (retcode != 0)
     {
       memcpy(src_req.ext, "\0\0\0", 3);
-      return;
     }
   }
 
@@ -693,34 +698,109 @@ void mv(char *argument)
   char dst_name[8];
   if (is_include(dest_last_name, '.'))
   {
-    char dst_ext[3];
-    split_by_first(dest_last_name, '.', dst_name);
-    memcpy(dst_ext, dest_last_name, 3);
-    memcpy(dst_req.ext, dst_ext, 3);
+    puts("Destination is a file\n", 22, 0xF);
+    puts("Please specify a directory\n", 28, 0xF);
+    return;
   }
   else
   {
     memcpy(dst_req.ext, "dir", 3);
     memcpy(dst_name, dest_last_name, 8);
     read_dir_syscall(dst_req, &retcode);
-    if (retcode == 0)
+    if (retcode == 1)
     {
-      memcpy(dst_req.ext, "\0\0\0", 3);
+      puts("Destination is not a directory\n", 31, 0xF);
+      return;
+    }
+    else if (retcode == -1)
+    {
+      puts("Unknown error\n", 14, 0xF);
       return;
     }
   }
-
-  memcpy(src_req.name, src_name, 8);
-  memcpy(dst_req.name, dst_name, 8);
-
   src_req.buffer_size = CLUSTER_SIZE;
   dst_req.buffer_size = CLUSTER_SIZE;
   src_req.buf = source_buffer;
   dst_req.buf = dest_buffer;
-  src_req.parent_cluster_number = dest_cluster_number;
-  write_syscall(src_req, &retcode);
   src_req.parent_cluster_number = source_cluster_number;
-  delete_syscall(src_req, &retcode);
+  src_req.parent_cluster_number = dest_cluster_number;
+  retcode = move_sys(&src_req, &dst_req);
+  if (retcode == 0)
+  {
+    puts("Success move '", 14, 0xF);
+    puts(src_name, 8, 0xF);
+    if (memcmp(src_req.ext, "dir", 3) != 0)
+    {
+      puts(".", 1, 0xF);
+      puts(src_req.ext, 3, 0xF);
+    }
+    puts("' to '", 7, 0xF);
+    puts(dst_name, 8, 0xF);
+    puts("'\n", 2, 0xF);
+  }
+
+  else if (retcode == 1)
+  {
+    puts("Error: Source entry not found.\n", 31, 0xF);
+  }
+  else if (retcode == 2)
+  {
+    puts("Error: Failed to read destination directory.\n", 45, 0xF);
+  }
+  else if (retcode == 3)
+  {
+    puts("Error: Destination directory is full.\n", 39, 0xF);
+  }
+  else if (retcode == 4)
+  {
+    puts("Error: Source and destination directories are the same.\n", 56, 0xF);
+  }
+  else
+  {
+    puts("Error: Unknown error occurred.\n", 32, 0xF);
+  }
+}
+
+void int_to_char(int32_t num, char *str)
+{
+  int i = 0;
+  int is_negative = 0;
+
+  if (num == 0)
+  {
+    str[i++] = '0';
+    str[i] = '\0';
+    return;
+  }
+
+  if (num < 0)
+  {
+    is_negative = 1;
+    num = -num;
+  }
+
+  while (num != 0)
+  {
+    int rem = num % 10;
+    str[i++] = rem + '0';
+    num = num / 10;
+  }
+
+  if (is_negative)
+    str[i++] = '-';
+
+  str[i] = '\0';
+
+  int start = 0;
+  int end = i - 1;
+  while (start < end)
+  {
+    char temp = str[start];
+    str[start] = str[end];
+    str[end] = temp;
+    start++;
+    end--;
+  }
 }
 
 void touch(char *argument)
