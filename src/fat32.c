@@ -67,6 +67,11 @@ uint32_t move_to_parent_directory(struct FAT32DriverRequest request) {
     return directory.table->cluster_high << 16 | directory.table->cluster_low;;
 }
 
+uint32_t move(struct FAT32DriverRequest src_req, struct FAT32DriverRequest dest_req) {
+    
+   
+}
+
 /**
  * Checking whether filesystem signature is missing or not in boot sector
  *

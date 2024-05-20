@@ -104,6 +104,13 @@ void syscall(struct InterruptFrame frame)
   case (12):
     print_path_to_dir((char *)frame.cpu.general.ebx, frame.cpu.general.ecx, (char *)frame.cpu.general.edx);
     break;
+
+  case (13):
+    *((uint32_t *)frame.cpu.general.ecx) = move(*(struct FAT32DriverRequest *)frame.cpu.general.ebx, *(struct FAT32DriverRequest *)frame.cpu.general.edx);
+    break;
+  case (14):
+    keyboard_state_deactivate();
+    break;
   }
 }
 
