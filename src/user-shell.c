@@ -268,27 +268,6 @@ int strlen_before_char(char *str, char cmp)
   return i;
 }
 
-int strlen_after_char(char *str, char cmp)
-{
-  int i = 0;
-  int cmp_index = -1;
-
-  while (str[i] != '\0')
-  {
-    if (str[i] == cmp)
-    {
-      cmp_index = i;
-      break;
-    }
-    i++;
-  }
-
-  if (cmp_index == -1)
-    return 0;
-
-  return i - cmp_index - 1;
-}
-
 void cp(char *argument)
 {
   // Initiate source file
@@ -296,11 +275,18 @@ void cp(char *argument)
   // getting the source file name and extension
   split_by_first(argument, ' ', source);
 
-  char source_ext[strlen_after_char(source, '.')];
+  char source_ext[3];
   char source_name[strlen_before_char(source, '.')];
   split_by_first(source, '.', source_name);
 
   memcpy(source_ext, source, strlen(source));
+  uint8_t ext_len = strlen(source);
+
+  while (ext_len < 3)
+  {
+    source_ext[ext_len] = '\0';
+    ext_len++;
+  }
 
   // puts("source: ", 12, 0xF);
   // puts(source, strlen(source), 0xF);
@@ -315,24 +301,42 @@ void cp(char *argument)
   // puts("\n", 1, 0xF);
 
   // getting the destination path
-  char dest[strlen(argument)];
+  char dest[200];
   memcpy(dest, argument, strlen(argument));
+
+  uint32_t dest_len = strlen(argument);
+  while (dest_len < 200)
+  {
+    dest[dest_len] = '\0';
+    dest_len++;
+  }
+
+  // puts("dest initial : ", 16, 0xF);
+  // puts(dest, strlen(dest), 0xF);
+  // puts("\n", 1, 0xF);
 
   // read source file
   reader_with_clust(cwd_cluster_number, source_name, source_ext);
 
   // copy the source content
-  // char source_content[512];
-  memcpy(buf, request.buf, strlen(request.buf));
+  char source_content[2000];
+  memcpy(source_content, request.buf, strlen(request.buf));
+  uint32_t temp = strlen(request.buf);
+
+  while (temp < 2000)
+  {
+    source_content[temp] = '\0';
+    temp++;
+  }
 
   // Source file found, check destination, arguments holds the path
   if (retcode == 0)
   {
     if (is_include(dest, '.') && !is_include(dest, '/') && strlen(dest) <= 12)
     {
-      puts("Dest :", 7, 0xF);
-      puts(dest, strlen(dest), 0xF);
-      puts("\n", 1, 0xF);
+      // puts("Dest :", 7, 0xF);
+      // puts(dest, strlen(dest), 0xF);
+      // puts("\n", 1, 0xF);
 
       // Initiate target file
       char target_name[strlen_before_char(dest, '.')];
@@ -362,7 +366,7 @@ void cp(char *argument)
       // puts(target_name, 8, 0xF);
       // puts("\n", 1, 0xF);
 
-      writer_with_clust(cwd_cluster_number, target_name, target_ext, buf);
+      writer_with_clust(cwd_cluster_number, target_name, target_ext, source_content);
 
       if (retcode != 0)
       {
@@ -372,10 +376,6 @@ void cp(char *argument)
 
     else if (!is_include(dest, '.'))
     {
-      // puts("Dest ", 5, 0xF);
-      // puts(dest, strlen(dest), 0xF);
-      // puts("\n", 1, 0xF);
-
       uint32_t cd_count = 0;
       while (true)
       {
@@ -416,7 +416,7 @@ void cp(char *argument)
       }
 
       // implement copying file
-      writer_with_clust(cwd_cluster_number, source_name, source_ext, buf);
+      writer_with_clust(cwd_cluster_number, source_name, source_ext, source_content);
 
       if (retcode != 0)
       {
