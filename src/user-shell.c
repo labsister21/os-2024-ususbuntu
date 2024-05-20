@@ -717,13 +717,10 @@ void mv(char *argument)
   dst_req.buffer_size = CLUSTER_SIZE;
   src_req.buf = source_buffer;
   dst_req.buf = dest_buffer;
-  puts(src_req.name, 8, 0xF);
-  puts(".", 1, 0xF);
-  puts(src_req.ext, 3, 0xF);
-  puts("\n", 1, 0xF);
-  puts(dst_req.name, 8, 0xF);
-  puts(".", 1, 0xF);
-  puts(dst_req.ext, 3, 0xF);
+  src_req.parent_cluster_number = dest_cluster_number;
+  write_syscall(src_req, &retcode);
+  src_req.parent_cluster_number = source_cluster_number;
+  delete_syscall(src_req, &retcode);
 }
 
 void touch(char *argument)
@@ -1270,7 +1267,7 @@ int main(void)
     }
     else if (!memcmp(buf, "mv", 2))
     {
-      char* argument = buf + 3;
+      char *argument = buf + 3;
       remove_newline(argument);
       if (strlen(argument) > 0)
       {
