@@ -257,14 +257,17 @@ void cp(char *argument)
 {
   // Initiate source file
   char source[12];
-  char source_name[8];
   char source_ext[3];
+  char source_name[8];
 
   // getting the source file name and extension
   split_by_first(argument, ' ', source);
   split_by_first(source, '.', source_name);
 
-  memcpy(source_ext, source, strlen(source));
+  // memcpy(source_ext, source, strlen(source));
+  // puts("Extension: ", 12, 0x4);
+  // puts(source_ext, strlen(source_ext), 0x4);
+  // puts("\n", 1, 0x4);
 
   // getting the destination path
   char dest[strlen(argument)];
@@ -280,7 +283,7 @@ void cp(char *argument)
   // Source file found, check destination, arguments holds the path
   if (retcode == 0)
   {
-    if (is_include(dest, '.'))
+    if (is_include(dest, '.') && !is_include(dest, '/') && strlen(dest) <= 12)
     {
       // puts("Destination is a file\n", 23, 0x4);
       // Initiate target file
@@ -294,9 +297,17 @@ void cp(char *argument)
       memcpy(target_ext, dest, strlen(dest));
       char target_ext_len = strlen(target_ext);
 
+      // puts("Target file", 12, 0x4);
+      // puts(target_name, target_name_len, 0x4);
+      // puts("\n", 1, 0x4);
+
+      // puts("Target extension", 16, 0x4);
+      // puts(target_ext, target_ext_len, 0x4);
+      // puts("\n", 1, 0x4);
+
       writer_with_clust(cwd_cluster_number, target_name, target_ext, source_content);
     }
-    else
+    else if (!is_include(dest, '.'))
     {
       uint32_t cd_count = 0;
       while (true)
@@ -328,10 +339,10 @@ void cp(char *argument)
         cd("..");
       }
     }
-    // else
-    // {
-    //   puts("Invalid path\n", 15, 0x4);
-    // }
+    else
+    {
+      puts("invalid target\n", 15, 0x4);
+    }
   }
   else if (retcode == 3)
   {
@@ -523,81 +534,6 @@ void find(char *argument)
   //   // Not a directory, possibly a file
   // }
 }
-
-// argument semua teks setelah cp
-// void cp(char *argument)
-// {
-//   char *source;
-//   split(argument, ' ', source); // source berisi path file yang akan dicopy, argument berisi sisanya
-
-//   char *source_name;
-//   split_by_first(source, '.', source_name); // source_name berisi nama file yang akan dicopy, source berisi eksensinya
-//   uint8_t source_name_len = strlen(source_name);
-
-//   while (source_name_len < 8)
-//   {
-//     source_name[source_name_len] = '\0';
-//     source_name_len++;
-//   }
-
-//   memcpy(request.name, source_name, source_name_len);
-//   memcpy(request.ext, source, strlen(source));
-//   request.parent_cluster_number = cwd_cluster_number;
-
-//   read_syscall(request, &retcode);
-
-//   if (retcode == 0)
-//   {
-//     puts("Source file found\n", 10, 0xF);
-//     char *content;
-//     memcpy(content, request.buf, strlen(request.buf)); // mengcopy isi dari source fi;e
-
-//     if (!is_include(argument, '/')) // kondisi mencopy di cwd
-//     {
-//       char *target_name;
-//       split(argument, '.', target_name); // target_name berisi nama file yang akan dicopy, argument berisi eksensinya
-//       uint8_t target_name_len = strlen(target_name);
-//       while (target_name_len < 8)
-//       {
-//         target_name[target_name_len] = '\0';
-//         target_name_len++;
-//       }
-
-//       memcpy(request.name, target_name, target_name_len);
-//       memcpy(request.ext, argument, strlen(argument));
-
-//       read_syscall(request, &retcode);
-
-//       if (retcode == 0)
-//       {
-//         puts("Deleting Existing file\n", 25, 0xF);
-//         delete_syscall(request, &retcode);
-//       }
-
-//       memcpy(request.buf, content, strlen(content));
-//       request.buffer_size = strlen(content);
-
-//       write_syscall(request, &retcode);
-
-//       if (retcode == 0)
-//       {
-//         puts("File copied successfully\n", 24, 0xF);
-//       }
-//       else
-//       {
-//         puts("Failed to copy file\n", 20, 0xF);
-//       }
-//     }
-//     else // kondisi mencopy ke path tertentu
-//     {
-//       puts("Copying to path\n", 16, 0xF); // TBA
-//     }
-//   }
-//   else
-//   {
-//     puts("Source file not found\n", 14, 0xF);
-//   }
-// }
 
 // void mv(char *argument)
 // {
