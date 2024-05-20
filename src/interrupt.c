@@ -7,6 +7,7 @@
 #include "header/stdlib/string.h"
 #include "header/process/process.h"
 #include "header/clock.h"
+#include "header/scheduler/scheduler.h"
 
 // I/O port wait, around 1-4 microsecond, for I/O synchronization purpose
 void io_wait(void)
@@ -141,6 +142,16 @@ void syscall(struct InterruptFrame frame)
   }
 }
 
+struct Context create_context_from_interrupt_frame(struct InterruptFrame frame)
+{
+    struct Context ctx;
+    ctx.cpu = frame.cpu;
+    ctx.eip = frame.int_stack.eip;
+    ctx.eflags = frame.int_stack.eflags;
+    ctx.page_directory_virtual_addr = process_get_current_running_pcb_pointer()->context.page_directory_virtual_addr;
+    return ctx;
+}
+
 void main_interrupt_handler(struct InterruptFrame frame)
 {
   switch (frame.int_number)
@@ -150,6 +161,8 @@ void main_interrupt_handler(struct InterruptFrame frame)
     break;
   case PIC1_OFFSET + IRQ_TIMER:
     pic_ack(0); // timer_isr();
+    scheduler_save_context_to_current_running_pcb(create_context_from_interrupt_frame(frame));
+    //scheduler_switch_to_next_process(); // black screen error
     break;
   case 0x30:
     syscall(frame);

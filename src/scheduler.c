@@ -45,8 +45,12 @@ void scheduler_save_context_to_current_running_pcb(struct Context ctx) {
 }
 
 void scheduler_switch_to_next_process(void) {
-    current_running_process_index = get_next_process_index();
-    struct ProcessControlBlock* next_pcb = &(_process_list[current_running_process_index]);
+    // struct ProcessControlBlock* current_pcb = process_get_current_running_pcb_pointer();
+    // scheduler_save_context_to_current_running_pcb(current_pcb->context);
+
+    int32_t next_running_process_index = get_next_process_index();
+    struct ProcessControlBlock* next_pcb = &(_process_list[next_running_process_index]);
+    current_running_process_index = next_running_process_index;
     paging_use_page_directory(next_pcb->context.page_directory_virtual_addr);
     process_context_switch(next_pcb->context);
 }
