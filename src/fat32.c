@@ -186,7 +186,7 @@ uint32_t move_dir(struct FAT32DriverRequest src_req, struct FAT32DriverRequest d
     int32_t src_entry_index, dest_entry_index;
 
     // Check if the source and destination directories are the same
-    if (src_req.parent_cluster_number == dest_req.parent_cluster_number) {
+    if (is_same_directory(src_req, dest_req)) {
         return 4;  // Source and destination directories are the same
     }
 
