@@ -6,6 +6,7 @@
 #include "header/driver/framebuffer.h"
 #include "header/stdlib/string.h"
 #include "header/process/process.h"
+#include "header/clock.h"
 
 // I/O port wait, around 1-4 microsecond, for I/O synchronization purpose
 void io_wait(void)
@@ -111,6 +112,12 @@ void syscall(struct InterruptFrame frame)
     break;
   case (16):
     ps((char*)frame.cpu.general.ebx);
+    break;
+  case (17):
+    read_rtc();
+    *((uint32_t*)frame.cpu.general.ebx) = (uint32_t)hour;
+    *((uint32_t*)frame.cpu.general.ecx) = (uint32_t)minute;
+    *((uint32_t*)frame.cpu.general.edx) = (uint32_t)second;
     break;
   }
 }

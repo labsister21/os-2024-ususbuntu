@@ -44,6 +44,7 @@ kernel:
 	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/paging.c -o $(OUTPUT_FOLDER)/paging.o
 	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/process.c -o $(OUTPUT_FOLDER)/process.o
 	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/scheduler.c -o $(OUTPUT_FOLDER)/scheduler.o
+	@$(CC) $(CFLAGS) $(SOURCE_FOLDER)/clock.c -o $(OUTPUT_FOLDER)/clock.o
 	@$(LIN) $(LFLAGS) bin/*.o -o $(OUTPUT_FOLDER)/kernel
 	@echo Linking object files and generate elf32...
 	@rm -f *.o
@@ -82,21 +83,7 @@ user-shell:
 	@size --target=binary $(OUTPUT_FOLDER)/shell
 	@rm -f *.o
 
-clock:
-	@$(ASM) $(AFLAGS) $(SOURCE_FOLDER)/crt0.s -o crt0.o
-	@$(CC)  $(CFLAGS) -fno-pie $(SOURCE_FOLDER)/user-shell.c -o user-shell.o
-	@$(CC)  $(CFLAGS) -fno-pie $(SOURCE_FOLDER)/stdlib/string.c -o string.o
-	@$(CC)  $(CFLAGS) -fno-pie $(SOURCE_FOLDER)/command.c -o command.o
-	@$(LIN) -T $(SOURCE_FOLDER)/user-linker.ld -melf_i386 --oformat=binary \
-		crt0.o user-shell.o string.o -o $(OUTPUT_FOLDER)/shell
-	@echo Linking object shell object files and generate flat binary...
-	@$(LIN) -T $(SOURCE_FOLDER)/user-linker.ld -melf_i386 --oformat=elf32-i386 \
-		crt0.o user-shell.o string.o -o $(OUTPUT_FOLDER)/shell_elf
-	@echo Linking object shell object files and generate ELF32 for debugging...
-	@size --target=binary $(OUTPUT_FOLDER)/shell
-	@rm -f *.o
-
-insert-shell: inserter user-shell clock
+insert-shell: inserter user-shell
 	@echo Inserting shell into root directory...
 	@cd $(OUTPUT_FOLDER) && \
 		./inserter shell 2 $(DISK_NAME).bin

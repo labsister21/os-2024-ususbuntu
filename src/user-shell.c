@@ -860,6 +860,40 @@ void kill(char* argument) {
   syscall(14, (uint32_t)pid, 0, 0);
 }
 
+void custom_sprintf(char *str, const char *format, int h, int m, int s) {
+    // This assumes the format is always "%02d:%02d:%02d"
+    str[0] = (h / 10) + '0';
+    str[1] = (h % 10) + '0';
+    str[2] = ':';
+    str[3] = (m / 10) + '0';
+    str[4] = (m % 10) + '0';
+    str[5] = ':';
+    str[6] = (s / 10) + '0';
+    str[7] = (s % 10) + '0';
+    str[8] = '\0';
+}
+
+void clock(){
+  uint32_t hour;
+  uint32_t minute;
+  uint32_t second;
+  syscall(17, (uint32_t)&hour, (uint32_t)&minute, (uint32_t)&second);
+
+  char hourChar[2];
+  char minuteChar[2];
+  char secondChar[2];
+  int_to_str((int) hour, hourChar);
+  int_to_str((int) hour, minuteChar);
+  int_to_str((int) hour, secondChar);
+
+  puts(hourChar, 2, 0xF);
+  puts("\n", 1, 0xF);
+  puts(minuteChar, 2, 0xF);
+  puts("\n", 1, 0xF);
+  puts(secondChar, 2, 0xF);
+  puts("\n", 1, 0xF);
+}
+
 int main(void)
 {
   buf[2000] = '\0';
@@ -1116,6 +1150,13 @@ int main(void)
       puts("11. clear\n", 11, 0xF);
       puts("12. help\n", 10, 0xF);
 
+      clear_buf();
+      command(current_dir);
+      activate_keyboard();
+    }
+    else if(!memcmp(buf, "clock", 5))
+    {
+      clock();
       clear_buf();
       command(current_dir);
       activate_keyboard();

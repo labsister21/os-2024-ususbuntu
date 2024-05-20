@@ -12,6 +12,7 @@
 #include "header/memory/paging.h"
 #include "header/process/process.h"
 #include "header/scheduler/scheduler.h"
+#include "header/clock.h"
 
 
 void kernel_setup(void)
@@ -43,6 +44,8 @@ void kernel_setup(void)
 
   // Set TSS $esp pointer and jump into shell
   set_tss_kernel_current_stack();
+
+  read_rtc();
 
   // Create & execute process 0
   // process_create_user_process(request);
