@@ -54,50 +54,50 @@ void syscall(struct InterruptFrame frame)
   switch (frame.cpu.general.eax)
   {
   case 0:
-    *((int8_t*)frame.cpu.general.ecx) = read(
-      *(struct FAT32DriverRequest*)frame.cpu.general.ebx);
+    *((int8_t *)frame.cpu.general.ecx) = read(
+        *(struct FAT32DriverRequest *)frame.cpu.general.ebx);
     break;
   case 1:
-    *((int8_t*)frame.cpu.general.ecx) = read_directory(
-      *(struct FAT32DriverRequest*)frame.cpu.general.ebx);
+    *((int8_t *)frame.cpu.general.ecx) = read_directory(
+        *(struct FAT32DriverRequest *)frame.cpu.general.ebx);
     break;
   case 2:
-    *((int8_t*)frame.cpu.general.ecx) = write(
-      *(struct FAT32DriverRequest*)frame.cpu.general.ebx);
+    *((int8_t *)frame.cpu.general.ecx) = write(
+        *(struct FAT32DriverRequest *)frame.cpu.general.ebx);
     break;
   case 3:
-    *((int8_t*)frame.cpu.general.ecx) = delete (
-      *(struct FAT32DriverRequest*)frame.cpu.general.ebx);
+    *((int8_t *)frame.cpu.general.ecx) = delete (
+        *(struct FAT32DriverRequest *)frame.cpu.general.ebx);
     break;
   case 4:
-    get_keyboard_buffer((char*)frame.cpu.general.ebx, (int32_t*)frame.cpu.general.ecx);
+    get_keyboard_buffer((char *)frame.cpu.general.ebx, (int32_t *)frame.cpu.general.ecx);
     break;
   case 5:
     putchar((char)frame.cpu.general.ebx, frame.cpu.general.ecx);
     break;
   case 6:
     puts(
-      (char*)frame.cpu.general.ebx,
-      frame.cpu.general.ecx,
-      frame.cpu.general.edx); // Assuming puts() exist in kernel
+        (char *)frame.cpu.general.ebx,
+        frame.cpu.general.ecx,
+        frame.cpu.general.edx); // Assuming puts() exist in kernel
     break;
   case 7:
     keyboard_state_activate();
     break;
   case (8):
-    *((uint32_t*)frame.cpu.general.ecx) = move_to_child_directory(*(struct FAT32DriverRequest*)frame.cpu.general.ebx);
+    *((uint32_t *)frame.cpu.general.ecx) = move_to_child_directory(*(struct FAT32DriverRequest *)frame.cpu.general.ebx);
     break;
   case (9):
-    *((uint32_t*)frame.cpu.general.ecx) = move_to_parent_directory(*(struct FAT32DriverRequest*)frame.cpu.general.ebx);
+    *((uint32_t *)frame.cpu.general.ecx) = move_to_parent_directory(*(struct FAT32DriverRequest *)frame.cpu.general.ebx);
     break;
   case (10):
-    list_dir_content((char*)frame.cpu.general.ebx, frame.cpu.general.ecx);
+    list_dir_content((char *)frame.cpu.general.ebx, frame.cpu.general.ecx);
     break;
   case (11):
-    print((char*)frame.cpu.general.ebx, frame.cpu.general.ecx);
+    print((char *)frame.cpu.general.ebx, frame.cpu.general.ecx);
     break;
   case (12):
-    print_path_to_dir((char*)frame.cpu.general.ebx, frame.cpu.general.ecx, (char*)frame.cpu.general.edx);
+    print_path_to_dir((char *)frame.cpu.general.ebx, frame.cpu.general.ecx, (char *)frame.cpu.general.edx);
     break;
   case (13):
     framebuffer_clear();
@@ -108,24 +108,25 @@ void syscall(struct InterruptFrame frame)
     process_destroy(frame.cpu.general.ebx);
     break;
   case (15):
-    process_create_user_process(*(struct FAT32DriverRequest*)frame.cpu.general.ebx);
+    process_create_user_process(*(struct FAT32DriverRequest *)frame.cpu.general.ebx);
     break;
   case (16):
-    ps((char*)frame.cpu.general.ebx);
+    ps((char *)frame.cpu.general.ebx);
     break;
   case (17):
     read_rtc();
-    *((uint8_t*)frame.cpu.general.ebx) = hour;
-    *((uint8_t*)frame.cpu.general.ecx) = minute;
-    *((uint8_t*)frame.cpu.general.edx) = second;
+    *((uint8_t *)frame.cpu.general.ebx) = hour;
+    *((uint8_t *)frame.cpu.general.ecx) = minute;
+    *((uint8_t *)frame.cpu.general.edx) = second;
 
     // Calculate the position to print the clock
-    uint8_t clock_row = 24; // The last row (25th row, zero-indexed)
+    uint8_t clock_row = 24;     // The last row (25th row, zero-indexed)
     uint8_t clock_col = 80 - 8; // 80 columns wide minus 8 columns for "HH:MM:SS"
 
     // Clear the previous clock (if any)
-    for (uint8_t i = 0; i < 8; i++) {
-        framebuffer_write(clock_row - 1, clock_col + i, ' ', 0x07, 0x00);
+    for (uint8_t i = 0; i < 8; i++)
+    {
+      framebuffer_write(clock_row - 1, clock_col + i, ' ', 0x07, 0x00);
     }
 
     // Print the new time
@@ -138,6 +139,8 @@ void syscall(struct InterruptFrame frame)
     framebuffer_write(clock_row, clock_col + 6, (second / 10) + '0', 0xA, 0x0);
     framebuffer_write(clock_row, clock_col + 7, (second % 10) + '0', 0xA, 0x0);
     break;
+  case (18):
+    *((int8_t *)frame.cpu.general.ecx) = move_dir(*(struct FAT32DriverRequest *)frame.cpu.general.ebx, *(struct FAT32DriverRequest *)frame.cpu.general.edx);
   }
 }
 

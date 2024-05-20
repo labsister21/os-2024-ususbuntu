@@ -10,43 +10,36 @@
  * FAT32 - IF2230 edition - 2024
  */
 
-
-
- /* -- IF2230 File System constants -- */
-#define BOOT_SECTOR           0
-#define CLUSTER_BLOCK_COUNT   4
-#define CLUSTER_SIZE          (BLOCK_SIZE*CLUSTER_BLOCK_COUNT)
-#define CLUSTER_MAP_SIZE      512
+/* -- IF2230 File System constants -- */
+#define BOOT_SECTOR 0
+#define CLUSTER_BLOCK_COUNT 4
+#define CLUSTER_SIZE (BLOCK_SIZE * CLUSTER_BLOCK_COUNT)
+#define CLUSTER_MAP_SIZE 512
 
 /* -- FAT32 FileAllocationTable constants -- */
 // FAT reserved value for cluster 0 and 1 in FileAllocationTable
-#define CLUSTER_0_VALUE       0x0FFFFFF0
-#define CLUSTER_1_VALUE       0x0FFFFFFF
+#define CLUSTER_0_VALUE 0x0FFFFFF0
+#define CLUSTER_1_VALUE 0x0FFFFFFF
 
 // EOF also double as valid cluster / "this is last valid cluster in the chain"
 #define FAT32_FAT_END_OF_FILE 0x0FFFFFFF
 #define FAT32_FAT_EMPTY_ENTRY 0x00000000
 
-#define FAT_CLUSTER_NUMBER    1
-#define ROOT_CLUSTER_NUMBER   2
+#define FAT_CLUSTER_NUMBER 1
+#define ROOT_CLUSTER_NUMBER 2
 
 /* -- FAT32 DirectoryEntry constants -- */
-#define ATTR_SUBDIRECTORY     0b00010000
-#define UATTR_NOT_EMPTY       0b10101010
-
-
+#define ATTR_SUBDIRECTORY 0b00010000
+#define UATTR_NOT_EMPTY 0b10101010
 
 // Boot sector signature for this file system "FAT32 - IF2230 edition"
 extern const uint8_t fs_signature[BLOCK_SIZE];
 
 // Cluster buffer data type - @param buf Byte buffer with size of CLUSTER_SIZE
-struct ClusterBuffer {
+struct ClusterBuffer
+{
     uint8_t buf[CLUSTER_SIZE];
 } __attribute__((packed));
-
-
-
-
 
 /* -- FAT32 Data Structures -- */
 
@@ -55,7 +48,8 @@ struct ClusterBuffer {
  *
  * @param cluster_map Containing cluster map of FAT32
  */
-struct FAT32FileAllocationTable {
+struct FAT32FileAllocationTable
+{
     uint32_t cluster_map[CLUSTER_MAP_SIZE];
 } __attribute__((packed));
 
@@ -79,13 +73,14 @@ struct FAT32FileAllocationTable {
  * @param cluster_low    Lower 16-bit of cluster number
  * @param filesize       Filesize of this file, if this is directory / folder, filesize is 0
  */
-struct FAT32DirectoryEntry {
-    char     name[8];
-    char     ext[3];
-    uint8_t  attribute;
-    uint8_t  user_attribute;
+struct FAT32DirectoryEntry
+{
+    char name[8];
+    char ext[3];
+    uint8_t attribute;
+    uint8_t user_attribute;
 
-    bool     undelete;
+    bool undelete;
     uint16_t create_time;
     uint16_t create_date;
     uint16_t access_date;
@@ -98,13 +93,10 @@ struct FAT32DirectoryEntry {
 } __attribute__((packed));
 
 // FAT32 DirectoryTable, containing directory entry table - @param table Table of DirectoryEntry that span within 1 cluster
-struct FAT32DirectoryTable {
+struct FAT32DirectoryTable
+{
     struct FAT32DirectoryEntry table[CLUSTER_SIZE / sizeof(struct FAT32DirectoryEntry)];
 } __attribute__((packed));
-
-
-
-
 
 /* -- FAT32 Driver -- */
 
@@ -115,10 +107,11 @@ struct FAT32DirectoryTable {
  * @param dir_table_buf Buffer for directory table
  * @param cluster_buf   Buffer for cluster, can be used for temp var
  */
-struct FAT32DriverState {
+struct FAT32DriverState
+{
     struct FAT32FileAllocationTable fat_table;
-    struct FAT32DirectoryTable      dir_table_buf;
-    struct ClusterBuffer            cluster_buf;
+    struct FAT32DirectoryTable dir_table_buf;
+    struct ClusterBuffer cluster_buf;
 } __attribute__((packed));
 
 /**
@@ -130,18 +123,18 @@ struct FAT32DriverState {
  * @param parent_cluster_number Parent directory cluster number, for updating metadata
  * @param buffer_size           Buffer size, CRUD operation will have different behaviour with this attribute
  */
-struct FAT32DriverRequest {
-    void* buf;
-    char      name[8];
-    char      ext[3];
-    uint32_t  parent_cluster_number;
-    uint32_t  buffer_size;
+struct FAT32DriverRequest
+{
+    void *buf;
+    char name[8];
+    char ext[3];
+    uint32_t parent_cluster_number;
+    uint32_t buffer_size;
 } __attribute__((packed));
 
 uint32_t move_to_child_directory(struct FAT32DriverRequest request);
 uint32_t move_to_parent_directory(struct FAT32DriverRequest request);
-
-
+uint32_t move_dir(struct FAT32DriverRequest src_req, struct FAT32DriverRequest dest_req);
 
 /* -- Driver Interfaces -- */
 
@@ -162,7 +155,7 @@ uint32_t cluster_to_lba(uint32_t cluster);
  * @param name               8-byte char for directory name
  * @param parent_dir_cluster Parent directory cluster number
  */
-void init_directory_table(struct FAT32DirectoryTable* dir_table, char* name, uint32_t parent_dir_cluster);
+void init_directory_table(struct FAT32DirectoryTable *dir_table, char *name, uint32_t parent_dir_cluster);
 
 /**
  * Checking whether filesystem signature is missing or not in boot sector
@@ -192,7 +185,7 @@ void initialize_filesystem_fat32(void);
  * @param cluster_number Cluster number to write
  * @param cluster_count  Cluster count to write, due limitation of write_blocks block_count 255 => max cluster_count = 63
  */
-void write_clusters(const void* ptr, uint32_t cluster_number, uint8_t cluster_count);
+void write_clusters(const void *ptr, uint32_t cluster_number, uint8_t cluster_count);
 
 /**
  * Read cluster operation, wrapper for read_blocks().
@@ -202,11 +195,7 @@ void write_clusters(const void* ptr, uint32_t cluster_number, uint8_t cluster_co
  * @param cluster_number Cluster number to read
  * @param cluster_count  Cluster count to read, due limitation of read_blocks block_count 255 => max cluster_count = 63
  */
-void read_clusters(void* ptr, uint32_t cluster_number, uint8_t cluster_count);
-
-
-
-
+void read_clusters(void *ptr, uint32_t cluster_number, uint8_t cluster_count);
 
 /* -- CRUD Operation -- */
 
@@ -221,7 +210,6 @@ void read_clusters(void* ptr, uint32_t cluster_number, uint8_t cluster_count);
  * @return Error code: 0 success - 1 not a folder - 2 not found - -1 unknown
  */
 int8_t read_directory(struct FAT32DriverRequest request);
-
 
 /**
  * FAT32 read, read a file from file system.
@@ -241,7 +229,6 @@ int32_t ceil_div(int32_t a, int32_t b);
  */
 int8_t write(struct FAT32DriverRequest request);
 
-
 /**
  * FAT32 delete, delete a file or empty directory (only 1 DirectoryEntry) in file system.
  *
@@ -253,18 +240,19 @@ int8_t delete(struct FAT32DriverRequest request);
 /*
 Get children of this directory
 */
-void list_dir_content(char* buffer, uint32_t directory_cluster_number);
+void list_dir_content(char *buffer, uint32_t directory_cluster_number);
 
 /*
 Get filesystem content
 */
-void print(char * buffer, uint32_t dir_cluster_number);
+void print(char *buffer, uint32_t dir_cluster_number);
 
-void all_list_dir_content(char* buffer, uint32_t dir_cluster_number, int* dir_idx, int* level);
+void all_list_dir_content(char *buffer, uint32_t dir_cluster_number, int *dir_idx, int *level);
 
-void print_path_to_dir(char* buffer, uint32_t dir_cluster_number, const char* target_dir_name);
+void print_path_to_dir(char *buffer, uint32_t dir_cluster_number, const char *target_dir_name);
 
-void clear_buffer(char* buffer, size_t size);
+void clear_buffer(char *buffer, size_t size);
 
-void find_and_print_path(char* buffer, uint32_t dir_cluster_number, const char* target_dir_name, int* dir_idx, int* level, bool* found);
+void find_and_print_path(char *buffer, uint32_t dir_cluster_number, const char *target_dir_name, int *dir_idx, int *level, bool *found);
+
 #endif
