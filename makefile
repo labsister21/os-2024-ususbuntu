@@ -5,6 +5,7 @@ CC            = gcc
 
 # Directory
 SOURCE_FOLDER = src
+TEST_FOLDER = test
 OUTPUT_FOLDER = bin
 ISO_NAME      = OS2024
 DISK_NAME	  = storage
@@ -83,10 +84,25 @@ user-shell:
 	@size --target=binary $(OUTPUT_FOLDER)/shell
 	@rm -f *.o
 
-insert-shell: inserter user-shell
+rtc:
+	@$(ASM) $(AFLAGS) $(SOURCE_FOLDER)/crt0.s -o crt0.o
+	@$(CC)  $(CFLAGS) -fno-pie $(TEST_FOLDER)/rtc.c -o rtc.o
+	@$(CC)  $(CFLAGS) -fno-pie $(SOURCE_FOLDER)/stdlib/string.c -o string.o
+	@$(CC)  $(CFLAGS) -fno-pie $(SOURCE_FOLDER)/command.c -o command.o
+	@$(LIN) -T $(SOURCE_FOLDER)/user-linker.ld -melf_i386 --oformat=binary \
+		crt0.o rtc.o string.o -o $(OUTPUT_FOLDER)/rtc
+	@echo Linking object shell object files and generate flat binary...
+	@$(LIN) -T $(SOURCE_FOLDER)/user-linker.ld -melf_i386 --oformat=elf32-i386 \
+		crt0.o rtc.o string.o -o $(OUTPUT_FOLDER)/rtc_elf
+	@echo Linking object shell object files and generate ELF32 for debugging...
+	@size --target=binary $(OUTPUT_FOLDER)/rtc
+	@rm -f *.o
+
+insert-shell: inserter user-shell rtc
 	@echo Inserting shell into root directory...
 	@cd $(OUTPUT_FOLDER) && \
 		./inserter shell 2 $(DISK_NAME).bin
 	@cd $(OUTPUT_FOLDER) && \
 		./inserter ../test/tes.txt 2 $(DISK_NAME).bin
 	@cd $(OUTPUT_FOLDER) && ./inserter ../test/kaguya.txt 2 $(DISK_NAME).bin
+	@cd $(OUTPUT_FOLDER) && ./inserter ../test/rtc.c 2 $(DISK_NAME).bin

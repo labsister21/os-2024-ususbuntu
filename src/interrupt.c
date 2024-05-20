@@ -6,6 +6,7 @@
 #include "header/driver/framebuffer.h"
 #include "header/stdlib/string.h"
 #include "header/process/process.h"
+#include "header/scheduler/scheduler.h"
 #include "header/clock.h"
 
 // I/O port wait, around 1-4 microsecond, for I/O synchronization purpose
@@ -118,6 +119,25 @@ void syscall(struct InterruptFrame frame)
     *((uint8_t*)frame.cpu.general.ebx) = hour;
     *((uint8_t*)frame.cpu.general.ecx) = minute;
     *((uint8_t*)frame.cpu.general.edx) = second;
+
+    // Calculate the position to print the clock
+    uint8_t clock_row = 24; // The last row (25th row, zero-indexed)
+    uint8_t clock_col = 80 - 8; // 80 columns wide minus 8 columns for "HH:MM:SS"
+
+    // Clear the previous clock (if any)
+    for (uint8_t i = 0; i < 8; i++) {
+        framebuffer_write(clock_row - 1, clock_col + i, ' ', 0x07, 0x00);
+    }
+
+    // Print the new time
+    framebuffer_write(clock_row, clock_col, (hour / 10) + '0', 0xA, 0x0);
+    framebuffer_write(clock_row, clock_col + 1, (hour % 10) + '0', 0xA, 0x0);
+    framebuffer_write(clock_row, clock_col + 2, ':', 0xA, 0x0);
+    framebuffer_write(clock_row, clock_col + 3, (minute / 10) + '0', 0xA, 0x0);
+    framebuffer_write(clock_row, clock_col + 4, (minute % 10) + '0', 0xA, 0x0);
+    framebuffer_write(clock_row, clock_col + 5, ':', 0xA, 0x0);
+    framebuffer_write(clock_row, clock_col + 6, (second / 10) + '0', 0xA, 0x0);
+    framebuffer_write(clock_row, clock_col + 7, (second % 10) + '0', 0xA, 0x0);
     break;
   }
 }
@@ -131,6 +151,7 @@ void main_interrupt_handler(struct InterruptFrame frame)
     break;
   case PIC1_OFFSET + IRQ_TIMER:
     pic_ack(0); // timer_isr();
+    scheduler_switch_to_next_process();
     break;
   case 0x30:
     syscall(frame);
