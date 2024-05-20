@@ -975,46 +975,69 @@ void echo(char *argument)
 {
   remove_space(argument);
   remove_petik(argument);
-  char text[strlen(argument)];
+  char text[256];
   split_by_first(argument, '>', text);
-
+  puts(text, 256, 0xF);
   request.buffer_size = CLUSTER_SIZE;
-  text[strlen(text)] = '\0';
+  text[256] = '\0';
 
   request.parent_cluster_number = cwd_cluster_number;
   char name[8];
   split_by_first(argument, '.', name);
+  puts(text, 256, 0xF);
 
+  argument[3] = '\0';
   if (strlen(argument) < 3)
   {
     argument[strlen(argument)] = '\0';
   }
-  else
-  {
-    argument[8] = '\0';
-  }
-  if (strlen(name) < 3)
+
+  name[8] = '\0';
+  if (strlen(name) < 8)
   {
     name[strlen(name)] = '\0';
   }
-  else
-  {
-    name[8] = '\0';
-  }
+  puts(text, 256, 0xF);
 
-  request.buf = text;
-  memcpy(request.ext, argument, 3);
+  if (strlen(text) < 256)
+  {
+    text[strlen(text)] = '\0';
+  }
+  text[256] = '\0';
+  puts(text, 256, 0xF);
+
+  memcpy(request.buf, text, 256);
+  puts(text, 256, 0xF);
+  argument[3] = '\0';
+  memcpy(request.ext, argument, 4);
   memcpy(request.name, name, 8);
 
   read_syscall(request, &retcode);
-  if (retcode == 0)
+
+  if (retcode == 1)
+  {
+    puts("Not a file.\n", 12, 0xF);
+  }
+  else if (retcode == 2)
+  {
+    puts("Not enough buffer\n", 18, 0xF);
+  }
+  else if (retcode == 3)
+  {
+    puts("Not found.\n", 11, 0xF);
+  }
+  else if (retcode == -1)
+  {
+    puts("Unknown error read.\n", 15, 0xF);
+  }
+  else
   {
     delete_syscall(request, &retcode);
     write_syscall(request, &retcode);
 
     if (retcode != 0)
     {
-      puts("Unknown error.\n", 15, 0xF);
+      puts("Unknown error write.\n", 15, 0xF);
     }
     else
     {
@@ -1024,18 +1047,6 @@ void echo(char *argument)
       puts(request.ext, 3, 0xF);
       puts("' updated.\n", 12, 0xF);
     }
-  }
-  else if (retcode == 1)
-  {
-    puts("Not a file.\n", 12, 0xF);
-  }
-  else if (retcode == 3)
-  {
-    puts("Not found.\n", 11, 0xF);
-  }
-  else
-  {
-    puts("Unknown error", 13, 0xF);
   }
 }
 
