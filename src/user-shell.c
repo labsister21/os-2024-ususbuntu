@@ -282,53 +282,105 @@ void cp(char *argument)
   // getting the source file name and extension
   split_by_first(argument, ' ', source);
 
+  char source_ext[3];
   char source_name[strlen_before_char(source, '.')];
   split_by_first(source, '.', source_name);
 
-  char source_ext[3];
-  memcpy(source_ext, source, 3);
+  memcpy(source_ext, source, strlen(source));
+  uint8_t ext_len = strlen(source);
 
-  // memcpy(source_ext, source, strlen(source));
-  // puts("Extension: ", 12, 0x4);
-  // puts(source_ext, strlen(source_ext), 0x4);
-  // puts("\n", 1, 0x4);
+  while (ext_len < 3)
+  {
+    source_ext[ext_len] = '\0';
+    ext_len++;
+  }
+
+  // puts("source: ", 12, 0xF);
+  // puts(source, strlen(source), 0xF);
+  // puts("\n", 1, 0xF);
+
+  // puts("source ext: ", 12, 0xF);
+  // puts(source_ext, 3, 0xF);
+  // puts("\n", 1, 0xF);
+
+  // puts("source name: ", 13, 0xF);
+  // puts(source_name, 8, 0xF);
+  // puts("\n", 1, 0xF);
 
   // getting the destination path
-  char dest[strlen(argument)];
+  char dest[200];
   memcpy(dest, argument, strlen(argument));
+
+  uint32_t dest_len = strlen(argument);
+  while (dest_len < 200)
+  {
+    dest[dest_len] = '\0';
+    dest_len++;
+  }
+
+  // puts("dest initial : ", 16, 0xF);
+  // puts(dest, strlen(dest), 0xF);
+  // puts("\n", 1, 0xF);
 
   // read source file
   reader_with_clust(cwd_cluster_number, source_name, source_ext);
 
   // copy the source content
-  // char source_content[512];
-  memcpy(buf, request.buf, strlen(request.buf));
+  char source_content[2000];
+  memcpy(source_content, request.buf, strlen(request.buf));
+  uint32_t temp = strlen(request.buf);
+
+  while (temp < 2000)
+  {
+    source_content[temp] = '\0';
+    temp++;
+  }
 
   // Source file found, check destination, arguments holds the path
   if (retcode == 0)
   {
     if (is_include(dest, '.') && !is_include(dest, '/') && strlen(dest) <= 12)
     {
+      // puts("Dest :", 7, 0xF);
+      // puts(dest, strlen(dest), 0xF);
+      // puts("\n", 1, 0xF);
+
       // Initiate target file
-      char target_name[8];
+      char target_name[strlen_before_char(dest, '.')];
       char target_ext[3];
 
       split_by_first(dest, '.', target_name);
       char target_name_len = strlen(target_name);
 
+      // puts("target: ", 12, 0xF);
+      // puts(dest, strlen(dest), 0xF);
+      // puts("\n", 1, 0xF);
+
       memcpy(target_ext, dest, strlen(dest));
-      char target_ext_len = strlen(target_ext);
 
-      // puts("Target file", 12, 0x4);
-      // puts(target_name, target_name_len, 0x4);
-      // puts("\n", 1, 0x4);
+      uint8_t ext_len = strlen(dest);
+      while (ext_len < 3)
+      {
+        target_ext[ext_len] = '\0';
+        ext_len++;
+      }
 
-      // puts("Target extension", 16, 0x4);
-      // puts(target_ext, target_ext_len, 0x4);
-      // puts("\n", 1, 0x4);
+      // puts("target ext: ", 12, 0xF);
+      // puts(target_ext, 3, 0xF);
+      // puts("\n", 1, 0xF);
 
-      writer_with_clust(cwd_cluster_number, target_name, target_ext, buf);
+      // puts("target name: ", 13, 0xF);
+      // puts(target_name, 8, 0xF);
+      // puts("\n", 1, 0xF);
+
+      writer_with_clust(cwd_cluster_number, target_name, target_ext, source_content);
+
+      if (retcode != 0)
+      {
+        puts("failed to copy \n", 17, 0x4);
+      }
     }
+
     else if (!is_include(dest, '.'))
     {
       uint32_t cd_count = 0;
@@ -340,16 +392,38 @@ void cp(char *argument)
           char res[strlen(dest)];
           split_by_first(dest, '/', res);
           cd(res);
+
+          if (retcode == 2)
+          {
+            cd_count--;
+            break;
+          }
         }
         else
         {
           cd(dest);
+          if (retcode == 2)
+          {
+            cd_count--;
+          }
           break;
         }
       }
 
+      if (retcode == 2)
+      {
+        puts("the path is invalid\n", 21, 0x4);
+
+        for (uint32_t i = 0; i < cd_count; i++)
+        {
+          cd("..");
+        }
+
+        return;
+      }
+
       // implement copying file
-      writer_with_clust(cwd_cluster_number, source_name, source_ext, buf);
+      writer_with_clust(cwd_cluster_number, source_name, source_ext, source_content);
 
       if (retcode != 0)
       {
