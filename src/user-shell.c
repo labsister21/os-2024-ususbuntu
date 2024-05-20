@@ -2,7 +2,7 @@
 #include "header/filesystem/fat32.h"
 #include "header/stdlib/string.h"
 
-struct ClusterBuffer cl[2] = { 0 };
+struct ClusterBuffer cl[2] = {0};
 struct FAT32DriverRequest request = {
     .buf = &cl,
     .name = "shell",
@@ -38,27 +38,27 @@ void syscall(uint32_t eax, uint32_t ebx, uint32_t ecx, uint32_t edx)
   __asm__ volatile("int $0x30");
 }
 
-void read_syscall(struct FAT32DriverRequest request, int32_t* retcode)
+void read_syscall(struct FAT32DriverRequest request, int32_t *retcode)
 {
   syscall(0, (uint32_t)&request, (uint32_t)retcode, 0);
 }
 
-void read_dir_syscall(struct FAT32DriverRequest request, int32_t* retcode)
+void read_dir_syscall(struct FAT32DriverRequest request, int32_t *retcode)
 {
   syscall(1, (uint32_t)&request, (uint32_t)retcode, 0);
 }
 
-void write_syscall(struct FAT32DriverRequest request, int32_t* retcode)
+void write_syscall(struct FAT32DriverRequest request, int32_t *retcode)
 {
   syscall(2, (uint32_t)&request, (uint32_t)retcode, 0);
 }
 
-void delete_syscall(struct FAT32DriverRequest request, int32_t* retcode)
+void delete_syscall(struct FAT32DriverRequest request, int32_t *retcode)
 {
   syscall(3, (uint32_t)&request, (uint32_t)retcode, 0);
 }
 
-void get_user_input(char* buf, int32_t* retcode)
+void get_user_input(char *buf, int32_t *retcode)
 {
   syscall(4, (uint32_t)buf, (uint32_t)retcode, 0);
 }
@@ -68,7 +68,7 @@ void putchar(char buf, uint32_t color)
   syscall(5, (uint32_t)buf, color, 0);
 }
 
-void puts(char* str, uint32_t len, uint32_t color)
+void puts(char *str, uint32_t len, uint32_t color)
 {
   syscall(6, (uint32_t)str, len, color);
 }
@@ -78,17 +78,17 @@ void activate_keyboard(void)
   syscall(7, 0, 0, 0);
 }
 
-void move_child_dir(struct FAT32DriverRequest request, int32_t* retcode)
+void move_child_dir(struct FAT32DriverRequest request, int32_t *retcode)
 {
   syscall(8, (uint32_t)&request, (uint32_t)retcode, 0);
 }
 
-void move_parent_dir(struct FAT32DriverRequest request, int32_t* retcode)
+void move_parent_dir(struct FAT32DriverRequest request, int32_t *retcode)
 {
   syscall(9, (uint32_t)&request, (uint32_t)retcode, 0);
 }
 
-void command(char* current_dir)
+void command(char *current_dir)
 {
   puts("UsusBuntu@OS-IF2230:", 21, 0xA);
   puts(current_dir, 255, 0x9);
@@ -96,7 +96,7 @@ void command(char* current_dir)
   // get_user_input(buf);
 }
 
-void remove_newline(char* str)
+void remove_newline(char *str)
 {
   int len = strlen(str);
   for (int i = 0; i < len; i++)
@@ -109,7 +109,7 @@ void remove_newline(char* str)
   }
 }
 
-void split_by_first(char* pstr, char by, char* result)
+void split_by_first(char *pstr, char by, char *result)
 {
   int i = 0;
   while (pstr[i] != '\0' && pstr[i] != by)
@@ -137,7 +137,7 @@ void split_by_first(char* pstr, char by, char* result)
   }
 }
 
-int32_t is_include(char* str, char target)
+int32_t is_include(char *str, char target)
 {
   while (*str != '\0')
   {
@@ -150,7 +150,7 @@ int32_t is_include(char* str, char target)
   return 0;
 }
 
-void cd(char* argument)
+void cd(char *argument)
 {
   if (memcmp("..", argument, 2) == 0 && strlen(argument) == 2)
   {
@@ -204,7 +204,7 @@ void cd(char* argument)
   }
 }
 
-void reader_with_clust(uint32_t dir_cluster_number, char* name, char* ext)
+void reader_with_clust(uint32_t dir_cluster_number, char *name, char *ext)
 {
   // idk, for safety i guess
   uint32_t len_name = strlen(name);
@@ -226,7 +226,7 @@ void reader_with_clust(uint32_t dir_cluster_number, char* name, char* ext)
   read_syscall(request, &retcode);
 }
 
-void writer_with_clust(uint32_t dir_cluster_number, char* name, char* ext, char* buffer)
+void writer_with_clust(uint32_t dir_cluster_number, char *name, char *ext, char *buffer)
 {
   // idk, for safety i guess
   uint32_t len_name = strlen(name);
@@ -258,7 +258,7 @@ void writer_with_clust(uint32_t dir_cluster_number, char* name, char* ext, char*
   write_syscall(request, &retcode);
 }
 
-int strlen_before_char(char* str, char cmp)
+int strlen_before_char(char *str, char cmp)
 {
   int i = 0;
   while (str[i] != cmp && str[i] != '\0')
@@ -268,23 +268,51 @@ int strlen_before_char(char* str, char cmp)
   return i;
 }
 
-void cp(char* argument)
+int strlen_after_char(char *str, char cmp)
+{
+  int i = 0;
+  int cmp_index = -1;
+
+  while (str[i] != '\0')
+  {
+    if (str[i] == cmp)
+    {
+      cmp_index = i;
+      break;
+    }
+    i++;
+  }
+
+  if (cmp_index == -1)
+    return 0;
+
+  return i - cmp_index - 1;
+}
+
+void cp(char *argument)
 {
   // Initiate source file
   char source[strlen_before_char(argument, ' ')];
   // getting the source file name and extension
   split_by_first(argument, ' ', source);
 
+  char source_ext[strlen_after_char(source, '.')];
   char source_name[strlen_before_char(source, '.')];
   split_by_first(source, '.', source_name);
 
-  char source_ext[3];
-  memcpy(source_ext, source, 3);
+  memcpy(source_ext, source, strlen(source));
 
-  // memcpy(source_ext, source, strlen(source));
-  // puts("Extension: ", 12, 0x4);
-  // puts(source_ext, strlen(source_ext), 0x4);
-  // puts("\n", 1, 0x4);
+  // puts("source: ", 12, 0xF);
+  // puts(source, strlen(source), 0xF);
+  // puts("\n", 1, 0xF);
+
+  // puts("source ext: ", 12, 0xF);
+  // puts(source_ext, 3, 0xF);
+  // puts("\n", 1, 0xF);
+
+  // puts("source name: ", 13, 0xF);
+  // puts(source_name, 8, 0xF);
+  // puts("\n", 1, 0xF);
 
   // getting the destination path
   char dest[strlen(argument)];
@@ -302,28 +330,52 @@ void cp(char* argument)
   {
     if (is_include(dest, '.') && !is_include(dest, '/') && strlen(dest) <= 12)
     {
+      puts("Dest :", 7, 0xF);
+      puts(dest, strlen(dest), 0xF);
+      puts("\n", 1, 0xF);
+
       // Initiate target file
-      char target_name[8];
+      char target_name[strlen_before_char(dest, '.')];
       char target_ext[3];
 
       split_by_first(dest, '.', target_name);
       char target_name_len = strlen(target_name);
 
+      // puts("target: ", 12, 0xF);
+      // puts(dest, strlen(dest), 0xF);
+      // puts("\n", 1, 0xF);
+
       memcpy(target_ext, dest, strlen(dest));
-      char target_ext_len = strlen(target_ext);
 
-      // puts("Target file", 12, 0x4);
-      // puts(target_name, target_name_len, 0x4);
-      // puts("\n", 1, 0x4);
+      uint8_t ext_len = strlen(dest);
+      while (ext_len < 3)
+      {
+        target_ext[ext_len] = '\0';
+        ext_len++;
+      }
 
-      // puts("Target extension", 16, 0x4);
-      // puts(target_ext, target_ext_len, 0x4);
-      // puts("\n", 1, 0x4);
+      // puts("target ext: ", 12, 0xF);
+      // puts(target_ext, 3, 0xF);
+      // puts("\n", 1, 0xF);
+
+      // puts("target name: ", 13, 0xF);
+      // puts(target_name, 8, 0xF);
+      // puts("\n", 1, 0xF);
 
       writer_with_clust(cwd_cluster_number, target_name, target_ext, buf);
+
+      if (retcode != 0)
+      {
+        puts("failed to copy \n", 17, 0x4);
+      }
     }
+
     else if (!is_include(dest, '.'))
     {
+      // puts("Dest ", 5, 0xF);
+      // puts(dest, strlen(dest), 0xF);
+      // puts("\n", 1, 0xF);
+
       uint32_t cd_count = 0;
       while (true)
       {
@@ -333,12 +385,34 @@ void cp(char* argument)
           char res[strlen(dest)];
           split_by_first(dest, '/', res);
           cd(res);
+
+          if (retcode == 2)
+          {
+            cd_count--;
+            break;
+          }
         }
         else
         {
           cd(dest);
+          if (retcode == 2)
+          {
+            cd_count--;
+          }
           break;
         }
+      }
+
+      if (retcode == 2)
+      {
+        puts("the path is invalid\n", 21, 0x4);
+
+        for (uint32_t i = 0; i < cd_count; i++)
+        {
+          cd("..");
+        }
+
+        return;
       }
 
       // implement copying file
@@ -369,7 +443,7 @@ void cp(char* argument)
   }
 }
 
-void mkdir(char* argument)
+void mkdir(char *argument)
 {
   uint8_t name_len = strlen(argument);
   request.buffer_size = 0;
@@ -406,7 +480,7 @@ void mkdir(char* argument)
   }
 }
 
-void cat(char* argument)
+void cat(char *argument)
 {
   char filename[strlen(argument)];
   split_by_first(argument, '.', filename);
@@ -446,7 +520,7 @@ void cat(char* argument)
   }
 }
 
-void rm(char* argument)
+void rm(char *argument)
 {
   uint8_t name_len = strlen(argument);
   request.buffer_size = 0;
@@ -486,7 +560,7 @@ void rm(char* argument)
   }
 }
 
-void find(char* argument)
+void find(char *argument)
 {
   uint8_t name_len = strlen(argument);
   request.buffer_size = CLUSTER_SIZE;
@@ -558,7 +632,7 @@ void find(char* argument)
 //   rm(temp);
 // }
 
-void touch(char* argument)
+void touch(char *argument)
 {
   char filename[8];
   split_by_first(argument, '.', filename);
@@ -614,7 +688,7 @@ void touch(char* argument)
   }
 }
 
-void remove_space(char* str)
+void remove_space(char *str)
 {
   int32_t len = strlen(str);
   int32_t shift = 0;
@@ -633,7 +707,7 @@ void remove_space(char* str)
   str[len - shift] = '\0';
 }
 
-void remove_petik(char* str)
+void remove_petik(char *str)
 {
   int32_t len = strlen(str);
   int32_t shift = 0;
@@ -652,7 +726,7 @@ void remove_petik(char* str)
   str[len - shift] = '\0';
 }
 
-void echo(char* argument)
+void echo(char *argument)
 {
   remove_space(argument);
   remove_petik(argument);
@@ -725,36 +799,42 @@ void clear()
   syscall(13, 0, 0, 0);
 }
 
-void clear_buf() {
+void clear_buf()
+{
   for (int i = 0; i < 256; i++)
   {
     buf[i] = '\0';
   }
 }
 
-void clear_temp_buffer() {
+void clear_temp_buffer()
+{
   for (int i = 0; i < 256; i++)
   {
     temp_buf[i] = '\0';
   }
 }
 
-void int_to_str(int num, char* str) {
+void int_to_str(int num, char *str)
+{
   int i = 0;
   int is_negative = 0;
 
-  if (num == 0) {
+  if (num == 0)
+  {
     str[i++] = '0';
     str[i] = '\0';
     return;
   }
 
-  if (num < 0) {
+  if (num < 0)
+  {
     is_negative = 1;
     num = -num;
   }
 
-  while (num != 0) {
+  while (num != 0)
+  {
     int rem = num % 10;
     str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0';
     num = num / 10;
@@ -767,7 +847,8 @@ void int_to_str(int num, char* str) {
 
   int start = 0;
   int end = i - 1;
-  while (start < end) {
+  while (start < end)
+  {
     char temp = str[start];
     str[start] = str[end];
     str[end] = temp;
@@ -776,17 +857,20 @@ void int_to_str(int num, char* str) {
   }
 }
 
-void str_to_int(char* str, int* num) {
+void str_to_int(char *str, int *num)
+{
   int result = 0;
   int i = 0;
   int is_negative = 0;
 
-  if (str[0] == '-') {
+  if (str[0] == '-')
+  {
     is_negative = 1;
     i++;
   }
 
-  while (str[i] != '\0') {
+  while (str[i] != '\0')
+  {
     result = result * 10 + str[i] - '0';
     i++;
   }
@@ -797,14 +881,16 @@ void str_to_int(char* str, int* num) {
   *num = result;
 }
 
-void print_kaguya() {
+void print_kaguya()
+{
   cat("kaguya.txt");
   puts("\n", 1, 0xF);
   puts("Welcome to UsusBuntu OS\n", 25, 0xF);
   puts("Type 'help' to see the list of available commands\n", 51, 0xF);
 }
 
-void exec(char* argument) {
+void exec(char *argument)
+{
   // Exec command to create new process
   char filename[8];
   split_by_first(argument, '.', filename);
@@ -849,31 +935,35 @@ void exec(char* argument) {
   }
 }
 
-void ps_syscall() {
+void ps_syscall()
+{
   puts("Process list:\n", 14, 0xF);
   syscall(16, (uint32_t)buf, 0, 0);
 }
 
-void kill(char* argument) {
+void kill(char *argument)
+{
   int pid;
   str_to_int(argument, &pid);
   syscall(14, (uint32_t)pid, 0, 0);
 }
 
-void custom_sprintf(char *str, const char *format, int h, int m, int s) {
-    // This assumes the format is always "%02d:%02d:%02d"
-    str[0] = (h / 10) + '0';
-    str[1] = (h % 10) + '0';
-    str[2] = ':';
-    str[3] = (m / 10) + '0';
-    str[4] = (m % 10) + '0';
-    str[5] = ':';
-    str[6] = (s / 10) + '0';
-    str[7] = (s % 10) + '0';
-    str[8] = '\0';
+void custom_sprintf(char *str, const char *format, int h, int m, int s)
+{
+  // This assumes the format is always "%02d:%02d:%02d"
+  str[0] = (h / 10) + '0';
+  str[1] = (h % 10) + '0';
+  str[2] = ':';
+  str[3] = (m / 10) + '0';
+  str[4] = (m % 10) + '0';
+  str[5] = ':';
+  str[6] = (s / 10) + '0';
+  str[7] = (s % 10) + '0';
+  str[8] = '\0';
 }
 
-void clock(){
+void clock()
+{
   uint8_t hour;
   uint8_t minute;
   uint8_t second;
@@ -882,9 +972,9 @@ void clock(){
   char hourChar[2];
   char minuteChar[2];
   char secondChar[2];
-  int_to_str((int) second, secondChar);
-  int_to_str((int) minute, minuteChar);
-  int_to_str((int) hour + 7, hourChar); //GMT+07 WIB
+  int_to_str((int)second, secondChar);
+  int_to_str((int)minute, minuteChar);
+  int_to_str((int)hour + 7, hourChar); // GMT+07 WIB
 
   puts(hourChar, 2, 0xF);
   puts("\n", 1, 0xF);
@@ -907,7 +997,8 @@ int main(void)
   {
     get_user_input(&cur_char, &retcode);
 
-    if (retcode == -1) continue;
+    if (retcode == -1)
+      continue;
 
     if (!memcmp(&cur_char, "\n", 1))
     {
@@ -928,12 +1019,12 @@ int main(void)
       temp_buf[strlen(temp_buf)] = cur_char;
     }
 
-    if (!is_entered) continue;
-
+    if (!is_entered)
+      continue;
 
     if (!memcmp(buf, "cd", 2))
     {
-      char* argument = buf + 3;
+      char *argument = buf + 3;
       remove_newline(argument);
       while (true)
       {
@@ -991,7 +1082,7 @@ int main(void)
     }
     else if (!memcmp(buf, "mkdir", 5))
     {
-      char* argument = buf + 6;
+      char *argument = buf + 6;
       remove_newline(argument);
       if (strlen(argument) > 0)
       {
@@ -1004,7 +1095,7 @@ int main(void)
     }
     else if (!memcmp(buf, "touch", 5))
     {
-      char* argument = buf + 6;
+      char *argument = buf + 6;
       remove_newline(argument);
       if (strlen(argument) > 0)
       {
@@ -1017,7 +1108,7 @@ int main(void)
     }
     else if (!memcmp(buf, "echo", 4))
     {
-      char* argument = buf + 5;
+      char *argument = buf + 5;
       remove_newline(argument);
       if (strlen(argument) > 0)
       {
@@ -1030,7 +1121,7 @@ int main(void)
     }
     else if (!memcmp(buf, "cat", 3))
     {
-      char* argument = buf + 4;
+      char *argument = buf + 4;
       remove_newline(argument);
       if (strlen(argument) > 0)
       {
@@ -1043,7 +1134,7 @@ int main(void)
     }
     else if (!memcmp(buf, "rm", 2))
     {
-      char* argument = buf + 3;
+      char *argument = buf + 3;
       remove_newline(argument);
       if (strlen(argument) > 0)
       {
@@ -1059,7 +1150,7 @@ int main(void)
       char directories[255];
       memset(directories, '\0', sizeof(directories));
 
-      char* argument = buf + 5;
+      char *argument = buf + 5;
       remove_newline(argument);
       if (strlen(argument) > 0)
       {
@@ -1072,7 +1163,7 @@ int main(void)
     }
     else if (!memcmp(buf, "cp", 2))
     {
-      char* argument = buf + 3;
+      char *argument = buf + 3;
       remove_newline(argument);
       if (strlen(argument) > 0)
       {
@@ -1096,7 +1187,8 @@ int main(void)
     //   command(current_dir);
     //   activate_keyboard();
     // }
-    else if (!memcmp(buf, "ps", 2)) {
+    else if (!memcmp(buf, "ps", 2))
+    {
       ps_syscall();
       puts(buf, strlen(buf), 0xF);
       clear_buf();
@@ -1105,7 +1197,7 @@ int main(void)
     }
     else if (!memcmp(buf, "exec", 4))
     {
-      char* argument = buf + 5;
+      char *argument = buf + 5;
       remove_newline(argument);
       if (strlen(argument) > 0)
       {
@@ -1118,7 +1210,7 @@ int main(void)
     }
     else if (!memcmp(buf, "kill", 4))
     {
-      char* argument = buf + 5;
+      char *argument = buf + 5;
       remove_newline(argument);
       if (strlen(argument) > 0)
       {
@@ -1129,13 +1221,15 @@ int main(void)
       command(current_dir);
       activate_keyboard();
     }
-    else if (!memcmp(buf, "clear", 5)) {
+    else if (!memcmp(buf, "clear", 5))
+    {
       clear();
       clear_buf();
       command(current_dir);
       activate_keyboard();
     }
-    else if (!memcmp(buf, "help", 4)) {
+    else if (!memcmp(buf, "help", 4))
+    {
       puts("List of available commands:\n", 30, 0xF);
       puts("1.  cd [directory]\n", 20, 0xF);
       puts("2.  ls\n", 8, 0xF);
@@ -1154,7 +1248,7 @@ int main(void)
       command(current_dir);
       activate_keyboard();
     }
-    else if(!memcmp(buf, "clock", 5))
+    else if (!memcmp(buf, "clock", 5))
     {
       clock();
       clear_buf();
